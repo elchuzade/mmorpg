@@ -41,7 +41,7 @@ function draw() {
         drawCity();
         //drawGrid();
         drawLimits();
-
+        drawMonsters();
         drawUI();
         if (inventoryStatus) {
             drawInventory();
@@ -70,6 +70,20 @@ function draggingPickedItem() {
     rect(0, 0, myHero.draggingItem.width * cellSide, myHero.draggingItem.height * cellSide);
     pop();
 }
+
+function drawMonsters() {
+    for (let i = 0; i < state.monsters.length; i++) {
+        let localMonsterX = localMapX + state.monsters[i].globalX;
+        let localMonsterY = localMapY + state.monsters[i].globalY;
+        //let monsterMouseAngle = state.players[i].angle;
+        push();
+        fill(255, 0, 0);
+        noStroke();
+        ellipse(localMonsterX, localMonsterY, 50);
+        pop();
+    }
+}
+
 function writeMouseCoordinates() {
     push();
     textSize(20);
@@ -93,7 +107,7 @@ function statusBar() {
     nickname();
     healthBar();
     manaBar();
-    //expBar();
+    expBar();
 }
 function frame() {
     fill(225, 225, 225, 150);
@@ -105,6 +119,23 @@ function level() {
 }
 function nickname() {
     rect(50, 10, 260, 30);
+}
+function healthBar() {
+    let factor = myHero.maxHealth / barLength;
+    let healthLength = myHero.health / factor;
+    push();
+    fill(120, 120, 120);
+    rect(10, 50, barLength, 20);
+    fill(255, 0, 0);
+    rect(10, 50, healthLength, 20);
+    stroke(25, 25, 25);
+    strokeWeight(3);
+    line(10 + healthLength, 55, 10 + healthLength, 65);
+    textSize(16);
+    noStroke();
+    fill(255, 255, 255);
+    text(myHero.health + ' / ' + myHero.maxHealth, 20, 66);
+    pop();
 }
 function manaBar() {
     let factor = myHero.maxMana / barLength;
@@ -123,21 +154,21 @@ function manaBar() {
     text(myHero.mana + ' / ' + myHero.maxMana, 20, 96);
     pop();
 }
-function healthBar() {
-    let factor = myHero.maxHealth / barLength;
-    let healthLength = myHero.health / factor;
+function expBar() {
+    let factor = myHero.maxExperience / barLength;
+    let expLength = myHero.experience / factor;
     push();
     fill(120, 120, 120);
-    rect(10, 50, barLength, 20);
-    fill(255, 0, 0);
-    rect(10, 50, healthLength, 20);
+    rect(10, 110, barLength, 20);
+    fill(180, 126, 22);
+    rect(10, 110, expLength, 20);
     stroke(25, 25, 25);
     strokeWeight(3);
-    line(10 + healthLength, 55, 10 + healthLength, 65);
+    line(10 + expLength, 115, 10 + expLength, 125);
     textSize(16);
     noStroke();
     fill(255, 255, 255);
-    text(myHero.health + ' / ' + myHero.maxHealth, 20, 66);
+    text(myHero.experience + ' / ' + myHero.maxExperience, 20, 126);
     pop();
 }
 function drawMap() {

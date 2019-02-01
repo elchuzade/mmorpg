@@ -32,6 +32,7 @@ class Map {
         this.city = city;
     }
     addMonster() {
+        // later make it a separate class !!!
         while (this.monsters.length < this.monstersLimit) {
             let monsterX = this.cityStartX;
             let monsterY = this.cityStartY;
@@ -41,9 +42,10 @@ class Map {
             while (monsterY >= this.cityStartY && monsterY <= this.cityEndY) {
                 monsterY = getRandomInt(this.height);
             }
+            let id = this.monsters.length;
             let angle = getRandomPI();
             let name = 'Goblin';
-            let health = 1000;
+            let health = 100;
             let walkSpeed = 1;
             let attackSpeed = 20;
             let armor = 10;
@@ -53,7 +55,8 @@ class Map {
                 name: 'Dragon Sword',
                 damage: 15
             }
-            let monster = new Monster(monsterX, monsterY, angle, name, health, walkSpeed, attackSpeed, armor, damage, aggressive, weapon);
+            let experience = 100;
+            let monster = new Monster(monsterX, monsterY, angle, name, health, walkSpeed, attackSpeed, armor, damage, aggressive, weapon, experience);
             this.monsters.push(monster);
         }
     }
@@ -69,7 +72,7 @@ class Map {
 }
 
 class Monster {
-    constructor(globalX, globalY, angle, name, health, walkSpeed, attackSpeed, armor, damage, aggressive /* boolean */, weapon) {
+    constructor(globalX, globalY, angle, name, health, walkSpeed, attackSpeed, armor, damage, aggressive, weapon, experience) {
         this.globalX = globalX;
         this.globalY = globalY;
         this.angle = angle;
@@ -81,6 +84,7 @@ class Monster {
         this.damage = damage;
         this.aggressive = aggressive;
         this.weapon = weapon;
+        this.experience = experience;
     }
     move() {
         console.log('randomly moving around');
@@ -146,6 +150,9 @@ class Player {
         this.destinationY = this.globalY;
         this.lastSkill = Date.now();
         this.walkSpeed = 10;
+        this.level = 1;
+        this.experience = 0 + 150; // temporarily add fake exp
+        this.maxExperience = getNextExperience(this.level);
     }
     direct(x, y, angle) {
         if (x > mapMargin && x < mapWidth - mapMargin && y > mapMargin && y < mapHeight - mapMargin) {
@@ -188,17 +195,13 @@ class Player {
 }
 
 class Skill {
-    constructor(globalX, globalY, angle, skillName, skillSpeed, skillDamage, attackerId) {
+    constructor(globalX, globalY, name, damage, attackerId, lastSkill) {
         this.globalX = globalX;
         this.globalY = globalY;
-        this.angle = angle;
-        this.skillName = skillName;
-        this.skillSpeed = skillSpeed;
-        this.skillDamage = skillDamage;
+        this.name = name;
+        this.damage = damage;
         this.attackerId = attackerId;
-    }
-    move() {
-        console.log('moving the skill');
+        this.lastSkill = lastSkill;
     }
 }
 
@@ -263,6 +266,77 @@ class Mage extends Player {
     useSkill(skillInfo) {
         //console.log('using skill', skillInfo);
     }
+}
+
+class RoundSkill extends Skill {
+    constructor(globalX, globalY, name, damage, attackerId, lastSkill, radius) {
+        super(globalX, globalY, name, damage, attackerId, lastSkill);
+        this.radius = radius;
+        this.timestamp = Date.now();
+    }
+    attack() {
+        console.log('try to attack');
+        for (let i = 0; i < MAP.monsters.length; i++) {
+            if (distance(MAP.monsters[i].globalX, MAP.monsters[i].globalY, this.globalX, this.globalY) < this.radius) {
+                MAP.monsters[i].health -= this.damage;
+                console.log('attacking', MAP.monsters[i].health, this.damage);
+                if (MAP.monsters[i].health <= 0) {
+                    let ii = findPlayerIndex(this.attackerId);
+                    console.log(ii, i);
+                    MAP.players[ii].experience += MAP.monsters[i].experience;
+                    findAndDestroy(MAP.monsters[i].id, 'monster');
+                }
+            }
+        }
+    }
+    move() {
+        if (Date.now() >= 5000 + this.timestamp) {
+            this.destroy();
+        }
+    }
+    destroy() {
+        console.log('destroying a skill');
+        findAndDestroy(this.timestamp, 'skill');
+    }
+}
+
+function findAndDestroy(id, thing) {
+    if (thing == 'skill') {
+        for (let i = 0; i < MAP.skills.length; i++) {
+            if (MAP.skills[i].timestamp == id) {
+                console.log('found a skill');
+                MAP.skills.splice(i, 1);
+            }
+        }
+    } else if (thing == 'monster') {
+        for (let i = 0; i < MAP.monsters.length; i++) {
+            if (MAP.monsters[i].id == id) {
+                console.log('found a monster');
+                MAP.monsters.splice(i, 1);
+            }
+        }
+    }
+}
+
+function getNextExperience(level) {
+    let result = 99999999;
+    switch (level) {
+        case 1:
+            result = 1000;
+            break;
+        case 2:
+            result = 2000;
+            break;
+        case 3:
+            result = 5000;
+            break;
+        case 4:
+            result = 10000;
+            break;
+        default:
+            return result;
+    }
+    return result;
 }
 
 function getRandomPI() {
@@ -463,73 +537,6 @@ function fakeItem() {
         globalY: 850
     }
     MAP.items.push(newRightWeapon2);
-    // random items
-    // let newItem1 = {
-    //     id: 123713,
-    //     inBag: false,
-    //     width: 4,
-    //     height: 2,
-    //     name: 'wing',
-    //     colorR: 0,
-    //     colorG: 255,
-    //     colorB: 0,
-    //     globalX: 500,
-    //     globalY: 500
-    // };
-    // MAP.items.push(newItem1);
-    // let newItem2 = {
-    //     id: 143213,
-    //     inBag: false,
-    //     width: 4,
-    //     height: 2,
-    //     name: 'pant',
-    //     colorR: 255,
-    //     colorG: 0,
-    //     colorB: 0,
-    //     globalX: 200,
-    //     globalY: 200
-    // };
-    // MAP.items.push(newItem2);
-    // let newItem3 = {
-    //     id: 123210,
-    //     inBag: false,
-    //     width: 2,
-    //     height: 2,
-    //     name: 'wing',
-    //     colorR: 0,
-    //     colorG: 0,
-    //     colorB: 255,
-    //     globalX: 50,
-    //     globalY: 50
-    // };
-    // MAP.items.push(newItem3);
-    // let newItem4 = {
-    //     id: 143013,
-    //     inBag: false,
-    //     width: 2,
-    //     height: 4,
-    //     name: 'pant',
-    //     colorR: 255,
-    //     colorG: 0,
-    //     colorB: 0,
-    //     globalX: 240,
-    //     globalY: 240
-    // };
-    // MAP.items.push(newItem4);
-    // let newItem5 = {
-    //     id: 141211,
-    //     inBag: false,
-    //     width: 2,
-    //     height: 5,
-    //     name: 'pant',
-    //     colorR: 255,
-    //     colorG: 0,
-    //     colorB: 0,
-    //     globalX: 220,
-    //     globalY: 220
-    // };
-    // MAP.items.push(newItem5);
-    // gold
     let gold1 = {
         id: 173283,
         name: 'gold',
@@ -632,7 +639,10 @@ function fitItem(playerIndex, itemIndex, i, ii, j, jj) {
 function useSkill(socketId) {
     let i = findPlayerIndex(socketId);
     if (MAP.players[i].mana >= MAP.players[i].activeSkill.skillMana && MAP.players[i].lastSkill < Date.now() - MAP.players[i].attackSpeed) {
-        let newSkill = new Skill(MAP.players[i].globalX, MAP.players[i].globalY, MAP.players[i].mouseAngle, MAP.players[i].activeSkill.skillName, MAP.players[i].activeSkill.skillSpeed, MAP.players[i].activeSkill.skillDamage, socketId);
+        let newSkillRadius = 200; // different for different skills each skill will have its own class that extends normal skill class
+        let newSkill = new RoundSkill(MAP.players[i].globalX, MAP.players[i].globalY, MAP.players[i].activeSkill.skillName, MAP.players[i].activeSkill.skillDamage, socketId, Date.now(), newSkillRadius);
+        console.log(newSkill);
+        newSkill.attack();
         MAP.skills.push(newSkill);
         MAP.players[i].mana -= MAP.players[i].activeSkill.skillMana;
         MAP.players[i].lastSkill = Date.now();
@@ -802,7 +812,6 @@ function changeRightRing(socketId) {
     MAP.players[i].draggingItem = oldRight;
 }
 
-
 function moveAllPlayers() {
     for (let i = 0; i < MAP.players.length; i++) {
         MAP.players[i].move();
@@ -894,10 +903,12 @@ function emptyInventoryItemSpace(playerIndex, draggingItem) {
 }
 
 function moveAllSkills() {
-    console.log('moving a skill');
+    for (let i = 0; i < MAP.skills.length; i++) {
+        MAP.skills[i].move();
+    }
 }
 
-//setInterval(moveAllSkills, 15);
+setInterval(moveAllSkills, 15);
 setInterval(moveAllPlayers, 15);
 setInterval(refreshServerState, 1000);
 
