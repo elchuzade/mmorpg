@@ -103,7 +103,7 @@ class Monster {
 }
 
 class City {
-    constructor(name, width, height, shops, respawnStartX, respawnEndX, respawnStartY, respawnEndY) {
+    constructor(name, width, height, shops, respawnStartX, respawnEndX, respawnStartY, respawnEndY, warehouse) {
         this.name = name;
         this.width = width;
         this.height = height;
@@ -112,6 +112,7 @@ class City {
         this.respawnStartY = respawnStartY;
         this.respawnEndY = respawnEndY;
         this.shops = shops;
+        this.warehouse = warehouse
     }
 }
 
@@ -156,7 +157,32 @@ class Player {
         this.maxExperience = getNextExperience(this.level);
         this.blockTimestamp = 0;
         this.blockTimeLimit = 0;
-    }
+        this.warehouseItems = [];
+        this.warehouse = [
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        ];
+        this.warehouseOpened = false;
+    };
+
     direct(x, y, angle) {
         if (x > mapMargin && x < mapWidth - mapMargin && y > mapMargin && y < mapHeight - mapMargin) {
             let dist = distance(this.globalX, this.globalY, this.destinationX, this.destinationY);
@@ -284,14 +310,11 @@ class RoundSkill extends Skill {
         this.timestamp = Date.now();
     }
     attack() {
-        console.log('try to attack');
         for (let i = 0; i < MAP.monsters.length; i++) {
             if (distance(MAP.monsters[i].globalX, MAP.monsters[i].globalY, this.globalX, this.globalY) < this.radius) {
                 MAP.monsters[i].health -= this.damage;
-                console.log('attacking', MAP.monsters[i].health, this.damage);
                 if (MAP.monsters[i].health <= 0) {
                     let ii = findPlayerIndex(this.attackerId);
-                    console.log(ii, i);
                     MAP.players[ii].experience += MAP.monsters[i].experience;
                     findAndDestroy(MAP.monsters[i].id, 'monster');
                 }
@@ -304,7 +327,6 @@ class RoundSkill extends Skill {
         }
     }
     destroy() {
-        console.log('destroying a skill');
         findAndDestroy(this.timestamp, 'skill');
     }
 }
@@ -379,7 +401,14 @@ function createDeviasCity() {
     let respawnStartY = 100;
     let respawnEndY = height - respawnStartY;
     let shops = [];
-    deviasCity = new City(name, width, height, shops, respawnStartX, respawnEndX, respawnStartY, respawnEndY);
+    let warehouse = {
+        name: 'warehouse',
+        activeRadius: 100,
+        globalX: 100,
+        globalY: 100,
+        side: 50 // every shop will have a side of the effecting area to be able to click on the shop
+    };
+    deviasCity = new City(name, width, height, shops, respawnStartX, respawnEndX, respawnStartY, respawnEndY, warehouse);
 }
 
 function addNewPlayer(id, nickname, race) {
@@ -647,15 +676,17 @@ function fitItem(playerIndex, itemIndex, i, ii, j, jj) {
 }
 function useSkill(socketId) {
     let i = findPlayerIndex(socketId);
-    if (MAP.players[i].mana >= MAP.players[i].activeSkill.skillMana && MAP.players[i].lastSkill < Date.now() - MAP.players[i].attackSpeed) {
-        let newSkillRadius = 100; // different for different skills each skill will have its own class that extends normal skill class
-        let newSkill = new RoundSkill(MAP.players[i].globalX, MAP.players[i].globalY, MAP.players[i].activeSkill.skillName, MAP.players[i].activeSkill.skillDamage, socketId, Date.now(), newSkillRadius);
-        MAP.players[i].blockTimestamp = Date.now();
-        MAP.players[i].blockTimeLimit = 500; // different for different skills each skill will have its own class that extends normal skill class
-        newSkill.attack();
-        MAP.skills.push(newSkill);
-        MAP.players[i].mana -= MAP.players[i].activeSkill.skillMana;
-        MAP.players[i].lastSkill = Date.now();
+    if (MAP.players[i].globalX < MAP.cityStartX || MAP.players[i] > MAP.cityEndX || MAP.players[i].globalY < MAP.cityStartY || MAP.players[i].globalY > MAP.cityEndY) {
+        if (MAP.players[i].mana >= MAP.players[i].activeSkill.skillMana && MAP.players[i].lastSkill < Date.now() - MAP.players[i].attackSpeed) {
+            let newSkillRadius = 100; // different for different skills each skill will have its own class that extends normal skill class
+            let newSkill = new RoundSkill(MAP.players[i].globalX, MAP.players[i].globalY, MAP.players[i].activeSkill.skillName, MAP.players[i].activeSkill.skillDamage, socketId, Date.now(), newSkillRadius);
+            MAP.players[i].blockTimestamp = Date.now();
+            MAP.players[i].blockTimeLimit = 500; // different for different skills each skill will have its own class that extends normal skill class
+            newSkill.attack();
+            MAP.skills.push(newSkill);
+            MAP.players[i].mana -= MAP.players[i].activeSkill.skillMana;
+            MAP.players[i].lastSkill = Date.now();
+        }
     }
 }
 function addToPlayerItems(playerIndex, itemIndex) {
@@ -825,6 +856,11 @@ function changeRightRing(socketId) {
 function moveAllPlayers() {
     for (let i = 0; i < MAP.players.length; i++) {
         MAP.players[i].move();
+        if (MAP.players[i].warehouseOpened) {
+            if (distance(MAP.players[i].globalX, MAP.players[i].globalY, MAP.cityStartX + MAP.city.warehouse.globalX, MAP.cityStartY + MAP.city.warehouse.globalY) > MAP.city.warehouse.activeRadius) {
+                MAP.players[i].warehouseOpened = false;
+            }
+        }
     }
 }
 function assignNewAngle(socketId, angle) {
@@ -911,7 +947,6 @@ function emptyInventoryItemSpace(playerIndex, draggingItem) {
         }
     }
 }
-
 function moveAllSkills() {
     for (let i = 0; i < MAP.skills.length; i++) {
         MAP.skills[i].move();
@@ -1031,5 +1066,16 @@ io.sockets.on('connection', function (socket) {
     socket.on('changeRightRing', function () {
         changeRightRing(socket.id);
     });
-
+    socket.on('openWarehouse', function () {
+        openWarehouse(socket.id);
+    });
 });
+
+function openWarehouse(socketId) {
+    let i = findPlayerIndex(socketId);
+    if (!MAP.players[i].warehouseOpened) {
+        if (distance(MAP.players[i].globalX, MAP.players[i].globalY, MAP.cityStartX + MAP.city.warehouse.globalX, MAP.cityStartY + MAP.city.warehouse.globalY) <= MAP.city.warehouse.activeRadius) {
+            MAP.players[i].warehouseOpened = true;
+        }
+    }
+}

@@ -14,6 +14,7 @@ let pickedItem = {};
 let cellSide = 30; // size of a cell in inventory
 let gridX;
 let gridY;
+let debugColor = 50;
 
 function setup() {
     createCanvas(1000, 680);
@@ -41,6 +42,7 @@ function draw() {
         drawCity();
         //drawGrid();
         drawLimits();
+        drawShops();
         if (state.skills) {
             drawRoundSkill(); // draw all skills will be in future
         }
@@ -59,13 +61,62 @@ function draw() {
         draggingPickedItem();
     }
     checkState();
-    if (itemPickedStatus) {
-        noCursor();
-    } else {
-        cursor(ARROW);
-    }
     writeMouseCoordinates();
 }
+function drawShops() {
+    drawWarehouseShop();
+    if (myHero.warehouseOpened) {
+        drawWarehouse();
+    }
+}
+let statusBarMargin = 10;
+let statusBarWidth = 320;
+let statusBarHeight = 140;
+
+let warehouseWidth = 300;
+let warehouseMargin = 20;
+let warehouseHeight = 480;
+let warehouseGridX = warehouseMargin;
+let warehouseGridY = warehouseMargin + statusBarMargin + statusBarHeight;
+let gridWarehousedWidth = 300; // to be fixed later
+let gridWarehouseHeight = 480; // to be fixed later
+
+function drawWarehouse() {
+    push();
+    stroke(0, 0, 0);
+    strokeWeight(1);
+    fill(150, 150, 150);
+    translate(warehouseGridX, warehouseGridY)
+    rect(0, 0, warehouseWidth, warehouseHeight);
+    fill(175, 175, 175);
+    grid(0, 0, gridWarehousedWidth, gridWarehouseHeight, cellSide);
+    if (myHero.warehouseItems.length > 0) {
+        addWarehouseItems(cellSide);
+    }
+    pop();
+    // change to warehouse gridX and gridY and gridWidth and gridHeight
+    if (mouseX > warehouseGridX && mouseX < warehouseMargin + warehouseWidth &&
+        mouseY > warehouseGridY && mouseY < warehouseMargin + warehouseHeight) {
+        hoverItem();
+    }
+}
+
+function addWarehouseItems(cellSide) {
+    for (let i = 0; i < myHero.warehouseItems.length; i++) {
+        fill(myHero.warehouseItems[i].colorR, myHero.warehouseItems[i].colorG, myHero.warehouseItems[i].colorB);
+        rect(myHero.warehouseItems[i].globalX * cellSide, myHero.warehouseItems[i].globalY * cellSide, myHero.warehouseItems[i].width * cellSide, myHero.warehouseItems[i].height * cellSide);
+    }
+}
+
+function drawWarehouseShop() {
+    let localWarehouseX = localMapX + state.city.warehouse.globalX + state.cityStartX;
+    let localWarehouseY = localMapY + state.city.warehouse.globalY + state.cityStartY;
+    push();
+    fill(0, 0, debugColor);
+    ellipse(localWarehouseX, localWarehouseY, state.city.warehouse.side);
+    pop();
+}
+
 function draggingPickedItem() {
     push();
     fill(myHero.draggingItem.colorR, myHero.draggingItem.colorG, myHero.draggingItem.colorB);
@@ -106,7 +157,7 @@ function writeMouseCoordinates() {
 }
 function drawUI() {
     push();
-    translate(10, 10);
+    translate(statusBarMargin, statusBarMargin);
     statusBar();
     //buffBar();
     //skillBar();
@@ -124,7 +175,7 @@ function statusBar() {
 }
 function frame() {
     fill(225, 225, 225, 150);
-    rect(0, 0, 320, 140);
+    rect(0, 0, statusBarWidth, statusBarHeight);
 }
 function level() {
     fill(255, 255, 255);
@@ -239,7 +290,6 @@ function checkState() {
     }
     // right click of a mouse and hold to use skill every skill refresh seconds
     if (mouseIsPressed && mouseButton == RIGHT && mouseX > 0 && mouseX < width && mouseY > 0 && mouseY < height) {
-        console.log('clicking and dragging right button');
         socket.emit('usingSkill');
     }
     if (state.players) {
@@ -499,8 +549,14 @@ function mousePressed() {
             }
         }
     } else if (mouseButton == RIGHT && mouseX > 0 && mouseX < width && mouseY > 0 && mouseY < height) {
-        console.log('clicking and dragging right button');
-        socket.emit('usingSkill');
+        let localWarehouseCenterX = localMapX + state.cityStartX + state.city.warehouse.globalX;
+        let localWarehouseCenterY = localMapY + state.cityStartY + state.city.warehouse.globalY;
+        // kind of a radius for the warehouse center
+        if (dist(mouseX, mouseY, localWarehouseCenterX, localWarehouseCenterY) < state.city.warehouse.side / 2) {
+            socket.emit('openWarehouse');
+        } else {
+            socket.emit('usingSkill');
+        }
     }
 }
 function updateCoordinates() {
@@ -509,6 +565,20 @@ function updateCoordinates() {
 }
 function mouseMoved() {
     determineMouseAngle();
+    mouseHover();
+}
+function mouseHover() {
+    let localWarehouseCenterX = localMapX + state.cityStartX + state.city.warehouse.globalX;
+    let localWarehouseCenterY = localMapY + state.cityStartY + state.city.warehouse.globalY;
+    if (itemPickedStatus) {
+        noCursor();
+    } else {
+        if (dist(mouseX, mouseY, localWarehouseCenterX, localWarehouseCenterY) < state.city.warehouse.side / 2) {
+            cursor('help');
+        } else {
+            cursor('auto');
+        }
+    }
 }
 function mouseDragged() {
     determineMouseAngle();
