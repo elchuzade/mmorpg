@@ -220,12 +220,11 @@ class Mage extends Player {
         this.maxMana = 400;
         this.armor = 12;
         this.damage = 53;
-        this.attackSpeed = 3000;
+        this.attackSpeed = 1000;
         this.activeSkill = {
-            skillName: "fireBall",
-            skillDamage: 44,
-            skillMana: 10,
-            skillSpeed: 12
+            skillName: 'hellfire',
+            skillDamage: 60,
+            skillMana: 30
         };
         this.learnedSkills = [
             {
@@ -233,6 +232,11 @@ class Mage extends Player {
                 skillDamage: 44,
                 skillMana: 10,
                 skillSpeed: 12
+            },
+            {
+                skillName: 'hellfire',
+                skillDamage: 60,
+                skillMana: 30
             }
         ];
     }
@@ -291,7 +295,7 @@ class RoundSkill extends Skill {
         }
     }
     move() {
-        if (Date.now() >= 5000 + this.timestamp) {
+        if (Date.now() >= 500 + this.timestamp) {
             this.destroy();
         }
     }

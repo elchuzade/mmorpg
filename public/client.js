@@ -41,6 +41,9 @@ function draw() {
         drawCity();
         //drawGrid();
         drawLimits();
+        if (state.skills) {
+            drawRoundSkill(); // draw all skills will be in future
+        }
         drawMonsters();
         drawUI();
         if (inventoryStatus) {
@@ -70,7 +73,18 @@ function draggingPickedItem() {
     rect(0, 0, myHero.draggingItem.width * cellSide, myHero.draggingItem.height * cellSide);
     pop();
 }
-
+function drawRoundSkill() {
+    for (let i = 0; i < state.skills.length; i++) {
+        if (state.skills[i].name == 'hellfire') {
+            let localSkillX = localMapX + state.skills[i].globalX;
+            let localSkillY = localMapY + state.skills[i].globalY;
+            push();
+            fill(200, 0, 200);
+            ellipse(localSkillX, localSkillY, state.skills[i].radius * 2);
+            pop();
+        }
+    }
+}
 function drawMonsters() {
     for (let i = 0; i < state.monsters.length; i++) {
         let localMonsterX = localMapX + state.monsters[i].globalX;
@@ -83,7 +97,6 @@ function drawMonsters() {
         pop();
     }
 }
-
 function writeMouseCoordinates() {
     push();
     textSize(20);
