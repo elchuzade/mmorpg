@@ -56,7 +56,7 @@ class Map {
                 damage: 15
             }
             let experience = 100;
-            let monster = new Monster(monsterX, monsterY, angle, name, health, walkSpeed, attackSpeed, armor, damage, aggressive, weapon, experience);
+            let monster = new Monster(monsterX, monsterY, angle, name, health, walkSpeed, attackSpeed, armor, damage, aggressive, weapon, experience, id);
             this.monsters.push(monster);
         }
     }
@@ -72,7 +72,7 @@ class Map {
 }
 
 class Monster {
-    constructor(globalX, globalY, angle, name, health, walkSpeed, attackSpeed, armor, damage, aggressive, weapon, experience) {
+    constructor(globalX, globalY, angle, name, health, walkSpeed, attackSpeed, armor, damage, aggressive, weapon, experience, id) {
         this.globalX = globalX;
         this.globalY = globalY;
         this.angle = angle;
@@ -85,6 +85,7 @@ class Monster {
         this.aggressive = aggressive;
         this.weapon = weapon;
         this.experience = experience;
+        this.id = id;
     }
     move() {
         console.log('randomly moving around');
@@ -639,7 +640,7 @@ function fitItem(playerIndex, itemIndex, i, ii, j, jj) {
 function useSkill(socketId) {
     let i = findPlayerIndex(socketId);
     if (MAP.players[i].mana >= MAP.players[i].activeSkill.skillMana && MAP.players[i].lastSkill < Date.now() - MAP.players[i].attackSpeed) {
-        let newSkillRadius = 200; // different for different skills each skill will have its own class that extends normal skill class
+        let newSkillRadius = 100; // different for different skills each skill will have its own class that extends normal skill class
         let newSkill = new RoundSkill(MAP.players[i].globalX, MAP.players[i].globalY, MAP.players[i].activeSkill.skillName, MAP.players[i].activeSkill.skillDamage, socketId, Date.now(), newSkillRadius);
         console.log(newSkill);
         newSkill.attack();
