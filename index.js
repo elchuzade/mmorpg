@@ -154,6 +154,8 @@ class Player {
         this.level = 1;
         this.experience = 0 + 150; // temporarily add fake exp
         this.maxExperience = getNextExperience(this.level);
+        this.blockTimestamp = 0;
+        this.blockTimeLimit = 0;
     }
     direct(x, y, angle) {
         if (x > mapMargin && x < mapWidth - mapMargin && y > mapMargin && y < mapHeight - mapMargin) {
@@ -167,14 +169,16 @@ class Player {
         }
     }
     move() {
-        let dist = distance(this.globalX, this.globalY, this.destinationX, this.destinationY);
-        if (dist > this.radius) {
-            this.globalX += Math.cos(this.direction) * this.walkSpeed;
-            this.globalY += Math.sin(this.direction) * this.walkSpeed;
-        } else {
-            this.destinationX = this.globalX;
-            this.destinationY = this.globalY;
-            this.walking = false;
+        if (Date.now() - this.blockTimestamp > this.blockTimeLimit) {
+            let dist = distance(this.globalX, this.globalY, this.destinationX, this.destinationY);
+            if (dist > this.radius) {
+                this.globalX += Math.cos(this.direction) * this.walkSpeed;
+                this.globalY += Math.sin(this.direction) * this.walkSpeed;
+            } else {
+                this.destinationX = this.globalX;
+                this.destinationY = this.globalY;
+                this.walking = false;
+            }
         }
     }
     teleport(newX, newY) {
@@ -236,7 +240,7 @@ class Mage extends Player {
             {
                 skillName: 'hellfire',
                 skillDamage: 60,
-                skillMana: 30
+                skillMana: 20
             }
         ];
     }
@@ -362,7 +366,7 @@ function createDeviasMap(deviasCity) {
     let cityStartY = (height - deviasCity.height) / 2;
     let cityEndX = cityStartX + deviasCity.width;
     let cityEndY = cityStartY + deviasCity.height;
-    let monstersLimit = 3;
+    let monstersLimit = 30;
     devias = new Map(name, width, height, cityStartX, cityStartY, cityEndX, cityEndY, monstersLimit, deviasCity);
 }
 
@@ -646,7 +650,8 @@ function useSkill(socketId) {
     if (MAP.players[i].mana >= MAP.players[i].activeSkill.skillMana && MAP.players[i].lastSkill < Date.now() - MAP.players[i].attackSpeed) {
         let newSkillRadius = 100; // different for different skills each skill will have its own class that extends normal skill class
         let newSkill = new RoundSkill(MAP.players[i].globalX, MAP.players[i].globalY, MAP.players[i].activeSkill.skillName, MAP.players[i].activeSkill.skillDamage, socketId, Date.now(), newSkillRadius);
-        console.log(newSkill);
+        MAP.players[i].blockTimestamp = Date.now();
+        MAP.players[i].blockTimeLimit = 500; // different for different skills each skill will have its own class that extends normal skill class
         newSkill.attack();
         MAP.skills.push(newSkill);
         MAP.players[i].mana -= MAP.players[i].activeSkill.skillMana;
