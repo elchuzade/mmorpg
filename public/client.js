@@ -204,7 +204,6 @@ function findMyHero(socketId) {
         }
     }
 }
-
 function movePlayer() {
     //changes.leftClick = true; // check if left click is even needed ???
     let newMouseX = myHero.globalX - localX + mouseX;
@@ -216,12 +215,10 @@ function movePlayer() {
     socket.emit('directing', mouseCoords);
     // make a new socket emit later for moving only
 }
-
 function dropPickedItem() {
     socket.emit('dropPickedItem');
     itemPickedStatus = false;
 }
-
 function checkState() {
     socket.emit('updating');
     socket.on('refreshState', function (refreshedState) {
@@ -232,18 +229,16 @@ function checkState() {
         if (!inventoryStatus) {
             movePlayer();
         } else {
-            if (mouseX > width - inventoryMargin - inventoryWidth &&
-                mouseX < width - inventoryMargin &&
-                mouseY > inventoryMargin &&
-                mouseY < inventoryMargin + inventoryHeight) {
-            } else {
+            if (mouseX < width - inventoryMargin - inventoryWidth ||
+                mouseX > width - inventoryMargin ||
+                mouseY < inventoryMargin ||
+                mouseY > inventoryMargin + inventoryHeight) {
                 movePlayer();
             }
         }
     }
     // right click of a mouse and hold to use skill every skill refresh seconds
-    if (mouseButton == RIGHT && mouseX > 0 && mouseX < width && mouseY > 0 && mouseY < height) {
-        changes.rightClick = true;
+    if (mouseIsPressed && mouseButton == RIGHT && mouseX > 0 && mouseX < width && mouseY > 0 && mouseY < height) {
         console.log('clicking and dragging right button');
         socket.emit('usingSkill');
     }
@@ -252,7 +247,6 @@ function checkState() {
     }
     updateCoordinates();
 }
-
 function mousePressed() {
     if (mouseButton == LEFT && mouseX > 0 && mouseX < width && mouseY > 0 && mouseY < height) {
         // clicking left mouse button in the browser area
@@ -505,12 +499,10 @@ function mousePressed() {
             }
         }
     } else if (mouseButton == RIGHT && mouseX > 0 && mouseX < width && mouseY > 0 && mouseY < height) {
-        changes.rightClick = true;
         console.log('clicking and dragging right button');
         socket.emit('usingSkill');
     }
 }
-
 function updateCoordinates() {
     localMapX = localX - myHero.globalX;
     localMapY = localY - myHero.globalY;
