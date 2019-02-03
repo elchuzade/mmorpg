@@ -47,9 +47,9 @@ class Map {
             let name = 'Goblin';
             let health = 100;
             let walkSpeed = 3;
-            let attackSpeed = 20;
+            let attackSpeed = 1000;
             let armor = 10;
-            let damage = 40;
+            let damage = 5;
             let aggressive = true;
             let weapon = {
                 name: 'Dragon Sword',
@@ -87,7 +87,7 @@ class Monster {
         this.weapon = weapon;
         this.experience = experience;
         this.id = id;
-        this.giveupRadius = 450;
+        this.giveupRadius = 600;
         this.noticeRadius = 250;
         this.attackDistance = attackDistance;
         this.target = null;
@@ -95,33 +95,35 @@ class Monster {
         this.destinationY = null;
         this.direction = null;
         this.walking = false;
+        this.lastAttack = Date.now();
     }
     direct(x, y) {
         if (distance(this.globalX, this.globalY, x, y) < this.giveupRadius || distance(this.globalX, this.globalY, x, y) > this.attackDistance) {
-            //console.log('directing');
             this.destinationX = x;
             this.destinationY = y;
-            //console.log(this.destinationX, this.destinationY);
             this.direction = findAngle(this.globalX, this.globalY, x, y);
             this.walking = true;
         }
     }
     move(x, y) {
-        console.log(distance(x, y, this.globalX, this.globalY));
-        if (distance(this.globalX, this.globalY, x, y) > this.attackDistance) {
-            console.log('moving');
+        if (distance(this.globalX, this.globalY, x, y) > this.attackDistance && distance(this.globalX, this.globalY, x, y) < this.giveupRadius) {
             this.globalX += Math.cos(this.direction) * this.walkSpeed;
             this.globalY += Math.sin(this.direction) * this.walkSpeed;
-        } else {
+        } else if (distance(this.globalX, this.globalY, x, y) < this.attackDistance) {
             this.destinationX = null;
             this.destinationY = null;
             this.walking = false;
+            this.attack();
+        } else if (distance(this.globalX, this.globalY, x, y) > this.giveupRadius) {
+            this.destinationX = null;
+            this.destinationY = null;
+            this.walking = false;
+            this.target = null;
         }
     }
     observe() {
         for (let i = 0; i < MAP.players.length; i++) {
             if (distance(MAP.players[i].globalX, MAP.players[i].globalY, this.globalX, this.globalY) < this.noticeRadius) {
-                //console.log('detected a player to follow and attack');
                 this.target = MAP.players[i];
                 this.follow(MAP.players[i].globalX, MAP.players[i].globalY);
             }
@@ -131,6 +133,13 @@ class Monster {
         if (this.target) {
             this.direct(x, y);
             this.move(x, y);
+        }
+    }
+    attack() {
+        if (Date.now() - this.lastAttack > this.attackSpeed) {
+            let i = findPlayerIndex(this.target.id);
+            MAP.players[i].health -= this.damage;
+            this.lastAttack = Date.now();
         }
     }
 }
