@@ -333,7 +333,6 @@ function checkState() {
     }
     updateCoordinates();
 }
-
 function mousePressed() {
     if (mouseButton == LEFT && mouseX > 0 && mouseX < width && mouseY > 0 && mouseY < height) {
         if (mouseX > warehouseGridX && mouseX < warehouseGridX + warehouseWidth &&
@@ -792,7 +791,6 @@ function drawInventory() {
         hoverItem();
     }
 }
-
 function dressUp() {
     // drawing a pendant if exists
     if (myHero.pendant) {
@@ -832,7 +830,6 @@ function dressUp() {
         pop();
     }
 }
-
 function addInventoryItems(cellSide) {
     for (let i = 0; i < myHero.items.length; i++) {
         fill(myHero.items[i].colorR, myHero.items[i].colorG, myHero.items[i].colorB);

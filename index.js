@@ -46,7 +46,7 @@ class Map {
             let angle = getRandomPI();
             let name = 'Goblin';
             let health = 100;
-            let walkSpeed = 1;
+            let walkSpeed = 3;
             let attackSpeed = 20;
             let armor = 10;
             let damage = 40;
@@ -55,8 +55,9 @@ class Map {
                 name: 'Dragon Sword',
                 damage: 15
             }
+            let attackDistance = 100;
             let experience = 100;
-            let monster = new Monster(monsterX, monsterY, angle, name, health, walkSpeed, attackSpeed, armor, damage, aggressive, weapon, experience, id);
+            let monster = new Monster(monsterX, monsterY, angle, name, health, walkSpeed, attackSpeed, armor, damage, aggressive, weapon, experience, id, attackDistance);
             this.monsters.push(monster);
         }
     }
@@ -72,7 +73,7 @@ class Map {
 }
 
 class Monster {
-    constructor(globalX, globalY, angle, name, health, walkSpeed, attackSpeed, armor, damage, aggressive, weapon, experience, id) {
+    constructor(globalX, globalY, angle, name, health, walkSpeed, attackSpeed, armor, damage, aggressive, weapon, experience, id, attackDistance) {
         this.globalX = globalX;
         this.globalY = globalY;
         this.angle = angle;
@@ -86,19 +87,51 @@ class Monster {
         this.weapon = weapon;
         this.experience = experience;
         this.id = id;
+        this.giveupRadius = 450;
+        this.noticeRadius = 250;
+        this.attackDistance = attackDistance;
+        this.target = null;
+        this.destinationX = null;
+        this.destinationY = null;
+        this.direction = null;
+        this.walking = false;
     }
-    move() {
-        console.log('randomly moving around');
+    direct(x, y) {
+        if (distance(this.globalX, this.globalY, x, y) < this.giveupRadius || distance(this.globalX, this.globalY, x, y) > this.attackDistance) {
+            //console.log('directing');
+            this.destinationX = x;
+            this.destinationY = y;
+            //console.log(this.destinationX, this.destinationY);
+            this.direction = findAngle(this.globalX, this.globalY, x, y);
+            this.walking = true;
+        }
     }
-    attack() {
-        console.log('attacking a player');
+    move(x, y) {
+        console.log(distance(x, y, this.globalX, this.globalY));
+        if (distance(this.globalX, this.globalY, x, y) > this.attackDistance) {
+            console.log('moving');
+            this.globalX += Math.cos(this.direction) * this.walkSpeed;
+            this.globalY += Math.sin(this.direction) * this.walkSpeed;
+        } else {
+            this.destinationX = null;
+            this.destinationY = null;
+            this.walking = false;
+        }
     }
-    die() {
-        console.log('dying');
+    observe() {
+        for (let i = 0; i < MAP.players.length; i++) {
+            if (distance(MAP.players[i].globalX, MAP.players[i].globalY, this.globalX, this.globalY) < this.noticeRadius) {
+                //console.log('detected a player to follow and attack');
+                this.target = MAP.players[i];
+                this.follow(MAP.players[i].globalX, MAP.players[i].globalY);
+            }
+        }
     }
-    getValue(luck) {
-        console.log(luck, 'this is the amount of luck the player who killed the monster had');
-        console.log('doing some math including health and stuff and getting the value according to which the item will drop');
+    follow(x, y) {
+        if (this.target) {
+            this.direct(x, y);
+            this.move(x, y);
+        }
     }
 }
 
@@ -325,6 +358,11 @@ class RoundSkill extends Skill {
     destroy() {
         findAndDestroy(this.timestamp, 'skill');
     }
+}
+
+function findAngle(x1, y1, x2, y2) {
+    let angleRadians = Math.atan2(y2 - y1, x2 - x1);
+    return angleRadians;
 }
 
 function findAndDestroy(id, thing) {
@@ -867,9 +905,7 @@ function assignNewAngle(socketId, angle) {
 }
 function directPlayer(socketId, mouseCoords) {
     let i = findPlayerIndex(socketId);
-    if (MAP.players) {
-        MAP.players[i].direct(mouseCoords.newMouseX, mouseCoords.newMouseY, MAP.players[i].angle);
-    }
+    MAP.players[i].direct(mouseCoords.newMouseX, mouseCoords.newMouseY, MAP.players[i].angle);
 }
 function findPlayerIndex(socketId) {
     for (let i = 0; i < MAP.players.length; i++) {
@@ -1025,8 +1061,31 @@ function moveAllSkills() {
     }
 }
 
-setInterval(moveAllSkills, 15);
-setInterval(moveAllPlayers, 15);
+function moveAllMonsters() {
+    for (let i = 0; i < MAP.monsters.length; i++) {
+        MAP.monsters[i].observe();
+        if (MAP.monsters[i].walking) {
+            MAP.monsters[i].move();
+        }
+    }
+}
+
+function openWarehouse(socketId) {
+    let i = findPlayerIndex(socketId);
+    if (!MAP.players[i].warehouseOpened) {
+        if (distance(MAP.players[i].globalX, MAP.players[i].globalY, MAP.cityStartX + MAP.city.warehouse.globalX, MAP.cityStartY + MAP.city.warehouse.globalY) <= MAP.city.warehouse.activeRadius) {
+            MAP.players[i].warehouseOpened = true;
+        }
+    }
+}
+
+function everyFrame() {
+    moveAllSkills();
+    moveAllPlayers();
+    moveAllMonsters();
+}
+
+setInterval(everyFrame, 15);
 setInterval(refreshServerState, 1000);
 
 io.sockets.on('connection', function (socket) {
@@ -1153,12 +1212,3 @@ io.sockets.on('connection', function (socket) {
         openWarehouse(socket.id);
     });
 });
-
-function openWarehouse(socketId) {
-    let i = findPlayerIndex(socketId);
-    if (!MAP.players[i].warehouseOpened) {
-        if (distance(MAP.players[i].globalX, MAP.players[i].globalY, MAP.cityStartX + MAP.city.warehouse.globalX, MAP.cityStartY + MAP.city.warehouse.globalY) <= MAP.city.warehouse.activeRadius) {
-            MAP.players[i].warehouseOpened = true;
-        }
-    }
-}
