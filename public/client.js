@@ -938,3 +938,4 @@ function showItemInfo() {
     rect(0, 0, itemInfoWidth, itemInfoHeight);
     pop();
 }
+// testing
