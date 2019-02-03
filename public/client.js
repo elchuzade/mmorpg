@@ -319,43 +319,11 @@ function checkState() {
         state = refreshedState;
     });
     // left click of a mouse and hold to move the player non stop
-    // if (mouseIsPressed && mouseButton == LEFT && mouseX > 0 && mouseX < width && mouseY > 0 && mouseY < height) {
-    //     if (inventoryStatus && myHero.warehouseOpened) {
-    //         if (mouseX > warehouseGridX &&
-    //             mouseX < warehouseGridX + warehouseWidth &&
-    //             mouseY > warehouseGridY &&
-    //             mouseY < warehouseGridY + warehouseHeight) {
-    //             // clicking on a warehouse
-    //         } else if (mouseX > width - inventoryMargin - inventoryWidth &&
-    //             mouseX < width - inventoryMargin &&
-    //             mouseY > inventoryMargin &&
-    //             mouseY < inventoryMargin + inventoryHeight) {
-    //             // clicking on an inventry
-    //         } else {
-    //             movePlayer();
-    //         }
-    //     } else if (inventoryStatus && !myHero.warehouseOpened) {
-    //         if (mouseX > width - inventoryMargin - inventoryWidth &&
-    //             mouseX < width - inventoryMargin &&
-    //             mouseY > inventoryMargin &&
-    //             mouseY < inventoryMargin + inventoryHeight) {
-    //             // clicking on an inventry
-    //         } else {
-    //             movePlayer();
-    //         }
-    //     } else if (!inventoryStatus && myHero.warehouseOpened) {
-    //         if (mouseX > warehouseGridX &&
-    //             mouseX < warehouseGridX + warehouseWidth &&
-    //             mouseY > warehouseGridY &&
-    //             mouseY < warehouseGridY + warehouseHeight) {
-    //             // clicking on a warehouse
-    //         } else {
-    //             movePlayer();
-    //         }
-    //     } else {
-    //         movePlayer();
-    //     }
-    // }
+    if (!inventoryStatus && !myHero.warehouseOpened) {
+        if (mouseIsPressed && mouseButton == LEFT && mouseX > 0 && mouseX < width && mouseY > 0 && mouseY < height) {
+            movePlayer();
+        }
+    }
     // right click of a mouse and hold to use skill every skill refresh seconds
     if (mouseIsPressed && mouseButton == RIGHT && mouseX > 0 && mouseX < width && mouseY > 0 && mouseY < height) {
         socket.emit('usingSkill');
@@ -938,4 +906,3 @@ function showItemInfo() {
     rect(0, 0, itemInfoWidth, itemInfoHeight);
     pop();
 }
-// testing
