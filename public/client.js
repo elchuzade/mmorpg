@@ -16,6 +16,61 @@ let gridX;
 let gridY;
 let debugColor = 50;
 
+
+let leftWeaponX = 15;
+let weaponY = 15;
+let rightWeaponX = 225;
+let weaponWidth = 60;
+let weaponHeight = 120;
+
+let wingCapeX = 90;
+let wingCapeY = 15;
+let wingCapeWidth = 120;
+let wingCapeHeight = 75;
+
+let leftRingX = 90;
+let pendantX = 135;
+let rightRingX = 180;
+let ringPendantY = 105;
+let ringPendantSide = 30;
+
+let heroInfoX = 15;
+let heroInfoY = 315;
+let heroInfoSide = 30;
+
+let goldBarX = 60;
+let goldBarY = 315;
+let goldBarWidth = 225;
+let goldBarHeight = 30;
+
+let infoWidth = 200;
+let infoHeight = 400;
+let infoMargin = 10;
+
+let itemInfoWidth = 200;
+let itemInfoHeight = 300;
+
+
+let inventoryWidth = 300;
+let inventoryMargin = 20;
+let inventoryHeight = 510;
+let gridWidth = 300;
+let gridHeight = 300;
+let wearablesHeight = 150;
+
+let statusBarMargin = 10;
+let statusBarWidth = 320;
+let statusBarHeight = 140;
+
+let warehouseWidth = 300;
+let warehouseMargin = 20;
+let warehouseHeight = 480;
+let warehouseGridX = warehouseMargin;
+let warehouseGridY = warehouseMargin + statusBarMargin + statusBarHeight;
+let gridWarehousedWidth = 300; // to be fixed later
+let gridWarehouseHeight = 480; // to be fixed later
+
+
 function setup() {
     createCanvas(1000, 680);
     socket.emit('joined', {
@@ -69,18 +124,6 @@ function drawShops() {
         drawWarehouse();
     }
 }
-let statusBarMargin = 10;
-let statusBarWidth = 320;
-let statusBarHeight = 140;
-
-let warehouseWidth = 300;
-let warehouseMargin = 20;
-let warehouseHeight = 480;
-let warehouseGridX = warehouseMargin;
-let warehouseGridY = warehouseMargin + statusBarMargin + statusBarHeight;
-let gridWarehousedWidth = 300; // to be fixed later
-let gridWarehouseHeight = 480; // to be fixed later
-
 function drawWarehouse() {
     push();
     stroke(0, 0, 0);
@@ -97,7 +140,7 @@ function drawWarehouse() {
     // change to warehouse gridX and gridY and gridWidth and gridHeight
     if (mouseX > warehouseGridX && mouseX < warehouseMargin + warehouseWidth &&
         mouseY > warehouseGridY && mouseY < warehouseMargin + warehouseHeight) {
-        hoverItem();
+        hoverItemWarehouse();
     }
 }
 
@@ -276,32 +319,43 @@ function checkState() {
         state = refreshedState;
     });
     // left click of a mouse and hold to move the player non stop
-    if (mouseIsPressed && mouseButton == LEFT) {
-        if (!inventoryStatus) {
-            movePlayer();
-        } else {
-            if (inventoryStatus) {
-                if (mouseX < width - inventoryMargin - inventoryWidth ||
-                    mouseX > width - inventoryMargin ||
-                    mouseY < inventoryMargin ||
-                    mouseY > inventoryMargin + inventoryHeight) {
-                    movePlayer();
-                }
-            }
-        }
-        // if (!myHero.warehouse) {
-        //     movePlayer();
-        // } else {
-        //     if (myHero.warehouseOpened) {
-        //         if (mouseX < warehouseGridX ||
-        //             mouseX > warehouseGridX + warehouseWidth ||
-        //             mouseY < warehouseGridY ||
-        //             mouseY > warehouseGridY + warehouseHeight) {
-        //             movePlayer();
-        //         }
-        //     }
-        // }
-    }
+    // if (mouseIsPressed && mouseButton == LEFT && mouseX > 0 && mouseX < width && mouseY > 0 && mouseY < height) {
+    //     if (inventoryStatus && myHero.warehouseOpened) {
+    //         if (mouseX > warehouseGridX &&
+    //             mouseX < warehouseGridX + warehouseWidth &&
+    //             mouseY > warehouseGridY &&
+    //             mouseY < warehouseGridY + warehouseHeight) {
+    //             // clicking on a warehouse
+    //         } else if (mouseX > width - inventoryMargin - inventoryWidth &&
+    //             mouseX < width - inventoryMargin &&
+    //             mouseY > inventoryMargin &&
+    //             mouseY < inventoryMargin + inventoryHeight) {
+    //             // clicking on an inventry
+    //         } else {
+    //             movePlayer();
+    //         }
+    //     } else if (inventoryStatus && !myHero.warehouseOpened) {
+    //         if (mouseX > width - inventoryMargin - inventoryWidth &&
+    //             mouseX < width - inventoryMargin &&
+    //             mouseY > inventoryMargin &&
+    //             mouseY < inventoryMargin + inventoryHeight) {
+    //             // clicking on an inventry
+    //         } else {
+    //             movePlayer();
+    //         }
+    //     } else if (!inventoryStatus && myHero.warehouseOpened) {
+    //         if (mouseX > warehouseGridX &&
+    //             mouseX < warehouseGridX + warehouseWidth &&
+    //             mouseY > warehouseGridY &&
+    //             mouseY < warehouseGridY + warehouseHeight) {
+    //             // clicking on a warehouse
+    //         } else {
+    //             movePlayer();
+    //         }
+    //     } else {
+    //         movePlayer();
+    //     }
+    // }
     // right click of a mouse and hold to use skill every skill refresh seconds
     if (mouseIsPressed && mouseButton == RIGHT && mouseX > 0 && mouseX < width && mouseY > 0 && mouseY < height) {
         socket.emit('usingSkill');
@@ -311,46 +365,81 @@ function checkState() {
     }
     updateCoordinates();
 }
+
 function mousePressed() {
     if (mouseButton == LEFT && mouseX > 0 && mouseX < width && mouseY > 0 && mouseY < height) {
-        // clicking left mouse button in the browser area
-        if (!inventoryStatus) {
-            // inventory is closed any left click should be a walk command or drop item command
-            if (itemPickedStatus) {
-                // drop item
-                dropPickedItem();
+        if (mouseX > warehouseGridX && mouseX < warehouseGridX + warehouseWidth &&
+            mouseY > warehouseGridY && mouseY < warehouseGridY + warehouseHeight) {
+            // clicking inside the warehouse area
+            if (myHero.warehouseOpened) {
+                // clicking in warehouse while the warehouse is ooened
+                if (itemPickedStatus) {
+                    // clicking on a warehouse area having an item picked
+                    let mouseCoords = {
+                        x: Math.floor((mouseX - warehouseGridX) / cellSide),
+                        y: Math.floor((mouseY - warehouseGridY) / cellSide)
+                    };
+                    socket.emit('placingItemWarehouse', mouseCoords);
+                    socket.on('replacingItemWarehouseResult', function (result) {
+                        if (result) {
+                            pickedItem = {};
+                            itemPickedStatus = false;
+                        }
+                    });
+                } else {
+                    // no item is picked and clicking on a warehouse area
+                    for (let i = 0; i < myHero.items.length; i++) {
+                        if (mouseX > warehouseGridX + myHero.warehouseItems[i].globalX * cellSide &&
+                            mouseX < warehouseGridX + (myHero.warehouseItems[i].globalX + myHero.warehouseItems[i].width) * cellSide &&
+                            mouseY > warehouseGridY + myHero.warehouseItems[i].globalY * cellSide &&
+                            mouseY < warehouseGridY + (myHero.warehouseItems[i].globalY + myHero.warehouseItems[i].height) * cellSide) {
+                            pickedItem = myHero.warehouseItems[i];
+                            itemPickedStatus = true;
+                            socket.emit('warehousePickItem', pickedItem);
+                        }
+                    }
+                }
             } else {
-                // no item picked sp just walk
-                // moving the player
-                movePlayer();
+                // warehoue is closed
+                if (itemPickedStatus) {
+                    // clicking on the area of warehouse when its closed and having item picked
+                    dropPickedItem();
+                } else {
+                    // clicking on a warehouse area with no item picked and warehouse closed
+                    // just walk
+                    movePlayer();
+                }
             }
-        } else {
-            // inventory is opened only clicks out of inventory should be a walk command
-            if (mouseX > width - inventoryWidth - inventoryMargin &&
-                mouseX < width - inventoryMargin &&
-                mouseY > inventoryMargin &&
-                mouseY < inventoryMargin + inventoryHeight) {
-                // clicking inside inventory
-                // checking which item to pick up while no item is picked
+        } else if (mouseX > width - inventoryWidth - inventoryMargin &&
+            mouseX < width - inventoryMargin &&
+            mouseY > inventoryMargin &&
+            mouseY < inventoryMargin + inventoryHeight) {
+            // clicking on the inventory area
+            if (inventoryStatus) {
+                // clicking on the inventory area with inventory opened
+                // need to specify where exactly is the mouse click
                 if (mouseX > gridX &&
                     mouseX < gridX + gridWidth &&
                     mouseY > gridY &&
                     mouseY < gridY + gridHeight) {
                     // clicking inside the grid of an inventory
                     if (itemPickedStatus) {
+                        // having item picked and inventory opened clicking on the inventory grid area
+                        // some item is picked and clicking inside a grid inventory so trying to place it
                         // Update the item's position to a new place in inventory if allowed
                         let mouseCoords = {
                             x: Math.floor((mouseX - gridX) / cellSide),
                             y: Math.floor((mouseY - gridY) / cellSide)
                         };
                         socket.emit('placingItemInventory', mouseCoords);
-                        socket.on('replacingItemResult', function (result) {
+                        socket.on('replacingItemInventoryResult', function (result) {
                             if (result) {
                                 pickedItem = {};
                                 itemPickedStatus = false;
                             }
                         });
                     } else {
+                        // no item is picked and clicking inside inventory grid so trying to grab it
                         // Pick an item up
                         for (let i = 0; i < myHero.items.length; i++) {
                             if (mouseX > gridX + myHero.items[i].globalX * cellSide &&
@@ -551,15 +640,19 @@ function mousePressed() {
                     }
                 }
             } else {
-                // clicking outside of inventory
-                if (itemPickedStatus) {
-                    dropPickedItem();
-                    // drop item
-                } else {
-                    // no item picked sp just walk
-                    // moving the player
-                    movePlayer();
-                }
+                // clicking on the inventory area with inventory closed
+                // just walk
+                movePlayer();
+            }
+        } else {
+            // clicking outside of an inventory area
+            if (itemPickedStatus) {
+                // clicking outside of an inventory area with item picked
+                dropPickedItem();
+            } else {
+                // clicking outside of an inventory area with no item picked
+                // just walk
+                movePlayer();
             }
         }
     } else if (mouseButton == RIGHT && mouseX > 0 && mouseX < width && mouseY > 0 && mouseY < height) {
@@ -693,12 +786,6 @@ function keyPressed() {
         }
     }
 }
-let inventoryWidth = 300;
-let inventoryMargin = 20;
-let inventoryHeight = 510;
-let gridWidth = 300;
-let gridHeight = 300;
-let wearablesHeight = 150;
 function drawInventory() {
     push();
     stroke(0, 0, 0);
@@ -784,40 +871,6 @@ function addInventoryItems(cellSide) {
         rect(myHero.items[i].globalX * cellSide, myHero.items[i].globalY * cellSide, myHero.items[i].width * cellSide, myHero.items[i].height * cellSide);
     }
 }
-
-let leftWeaponX = 15;
-let weaponY = 15;
-let rightWeaponX = 225;
-let weaponWidth = 60;
-let weaponHeight = 120;
-
-let wingCapeX = 90;
-let wingCapeY = 15;
-let wingCapeWidth = 120;
-let wingCapeHeight = 75;
-
-let leftRingX = 90;
-let pendantX = 135;
-let rightRingX = 180;
-let ringPendantY = 105;
-let ringPendantSide = 30;
-
-let heroInfoX = 15;
-let heroInfoY = 315;
-let heroInfoSide = 30;
-
-let goldBarX = 60;
-let goldBarY = 315;
-let goldBarWidth = 225;
-let goldBarHeight = 30;
-
-let infoWidth = 200;
-let infoHeight = 400;
-let infoMargin = 10;
-
-let itemInfoWidth = 200;
-let itemInfoHeight = 300;
-
 function wearables() {
     rect(leftWeaponX, weaponY, weaponWidth, weaponHeight);              // left hand weapon
     rect(wingCapeX, wingCapeY, wingCapeWidth, wingCapeHeight);          // wings or capes
@@ -861,6 +914,18 @@ function hoverItem() {
                 mouseX < gridX + (item.globalX + item.width) * cellSide &&
                 mouseY > gridY + item.globalY * cellSide &&
                 mouseY < gridY + (item.globalY + item.height) * cellSide) {
+                showItemInfo();
+            }
+        });
+    }
+}
+function hoverItemWarehouse() {
+    if (!itemPickedStatus) {
+        myHero.warehouseItems.forEach(function (warehouseItem) {
+            if (mouseX > warehouseGridX + warehouseItem.globalX * cellSide &&
+                mouseX < warehouseGridX + (warehouseItem.globalX + warehouseItem.width) * cellSide &&
+                mouseY > warehouseGridY + warehouseItem.globalY * cellSide &&
+                mouseY < warehouseGridY + (warehouseItem.globalY + warehouseItem.height) * cellSide) {
                 showItemInfo();
             }
         });

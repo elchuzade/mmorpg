@@ -174,10 +174,6 @@ class Player {
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         ];
         this.warehouseOpened = false;
@@ -434,6 +430,7 @@ function fakeItem() {
     let newPendant1 = {
         id: 521321,
         inBag: false,
+        inWarehouse: false,
         width: 1,
         height: 1,
         type: 'pendant',
@@ -448,6 +445,7 @@ function fakeItem() {
     let newPendant2 = {
         id: 525361,
         inBag: false,
+        inWarehouse: false,
         width: 1,
         height: 1,
         type: 'pendant',
@@ -463,6 +461,7 @@ function fakeItem() {
     let newRing1 = {
         id: 998998,
         inBag: false,
+        inWarehouse: false,
         width: 1,
         height: 1,
         type: 'ring',
@@ -477,6 +476,7 @@ function fakeItem() {
     let newRing2 = {
         id: 908918,
         inBag: false,
+        inWarehouse: false,
         width: 1,
         height: 1,
         type: 'ring',
@@ -492,6 +492,7 @@ function fakeItem() {
     let newWing1 = {
         id: 492321,
         inBag: false,
+        inWarehouse: false,
         width: 4,
         height: 3,
         type: 'wingCape',
@@ -506,6 +507,7 @@ function fakeItem() {
     let newWing2 = {
         id: 472121,
         inBag: false,
+        inWarehouse: false,
         width: 4,
         height: 3,
         type: 'wingCape',
@@ -521,6 +523,7 @@ function fakeItem() {
     let newLeftWeapon1 = {
         id: 412320,
         inBag: false,
+        inWarehouse: false,
         width: 2,
         height: 4,
         type: 'weapon',
@@ -535,6 +538,7 @@ function fakeItem() {
     let newLeftWeapon2 = {
         id: 411121,
         inBag: false,
+        inWarehouse: false,
         width: 2,
         height: 4,
         type: 'weapon',
@@ -550,6 +554,7 @@ function fakeItem() {
     let newRightWeapon1 = {
         id: 472320,
         inBag: false,
+        inWarehouse: false,
         width: 2,
         height: 4,
         type: 'weapon',
@@ -564,6 +569,7 @@ function fakeItem() {
     let newRightWeapon2 = {
         id: 416121,
         inBag: false,
+        inWarehouse: false,
         width: 2,
         height: 4,
         type: 'weapon',
@@ -701,16 +707,6 @@ function refreshServerState() {
     if (MAP.players) {
         for (let i = 0; i < MAP.players.length; i++) {
             MAP.players[i].healthManaRegen();
-        }
-    }
-}
-function assignPickedItem(socketId, pickedItem) {
-    let i = findPlayerIndex(socketId);
-    for (let j = 0; j < MAP.players[i].items.length; j++) {
-        if (MAP.players[i].items[j].id == pickedItem.id) {
-            MAP.players[i].draggingItem = MAP.players[i].items[j];
-            MAP.players[i].items.splice(j, 1);
-            emptyInventoryItemSpace(i, MAP.players[i].draggingItem);
         }
     }
 }
@@ -882,12 +878,76 @@ function findPlayerIndex(socketId) {
         }
     }
 }
+// warehouse
+function placingItemWarehouse(socketId, mouseCoords) {
+    let i = findPlayerIndex(socketId);
+    let status = false;
+    if (checkItemCellsReplaceWarehouse(i, mouseCoords.y, mouseCoords.x)) {
+        // checking if any free space exists and fitting the object
+        status = true;
+    }
+    return status;
+}
+function checkItemCellsReplaceWarehouse(playerIndex, i, j) {
+    let counter = MAP.players[playerIndex].draggingItem.width * MAP.players[playerIndex].draggingItem.height;
+    if (i + MAP.players[playerIndex].draggingItem.height <= 10 && // warehouse width in cells
+        j + MAP.players[playerIndex].draggingItem.width <= 16) { // warehouse height in cells
+        for (let ii = 0; ii < MAP.players[playerIndex].draggingItem.height; ii++) {
+            for (let jj = 0; jj < MAP.players[playerIndex].draggingItem.width; jj++) {
+                if (MAP.players[playerIndex].warehouse[i + ii][j + jj] == 0) {
+                    counter--;
+                    if (counter == 0) {
+                        fitItemReplaceWarehouse(playerIndex, i, ii, j, jj);
+                        addToPlayerItemsReplaceWarehouse(playerIndex);
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+    return false;
+}
+function fitItemReplaceWarehouse(playerIndex, i, ii, j, jj) {
+    // ii - height of an item
+    // jj - width of an item
+    MAP.players[playerIndex].draggingItem.inWarehouse = true;
+    MAP.players[playerIndex].draggingItem.inBag = false;
+    MAP.players[playerIndex].draggingItem.globalX = j;
+    MAP.players[playerIndex].draggingItem.globalY = i;
+    for (let iii = 0; iii <= ii; iii++) {
+        for (let jjj = 0; jjj <= jj; jjj++) {
+            MAP.players[playerIndex].warehouse[i + iii][j + jjj] = 1;
+        }
+    }
+}
+function addToPlayerItemsReplaceWarehouse(playerIndex) {
+    MAP.players[playerIndex].warehouseItems.push(MAP.players[playerIndex].draggingItem);
+    MAP.players[playerIndex].draggingItem = null;
+}
+function emptyWarehouseItemSpace(playerIndex, draggingItem) {
+    // make zeros where the item was located
+    for (let i = draggingItem.globalY; i < draggingItem.globalY + draggingItem.height; i++) {
+        for (let j = draggingItem.globalX; j < draggingItem.globalX + draggingItem.width; j++) {
+            MAP.players[playerIndex].warehouse[i][j] = 0;
+        }
+    }
+}
+function assignPickedItemWarehouse(socketId, pickedItem) {
+    let i = findPlayerIndex(socketId);
+    for (let j = 0; j < MAP.players[i].warehouseItems.length; j++) {
+        if (MAP.players[i].warehouseItems[j].id == pickedItem.id) {
+            MAP.players[i].draggingItem = MAP.players[i].warehouseItems[j];
+            MAP.players[i].warehouseItems.splice(j, 1);
+            MAP.players[i].draggingItem.inWarehouse = false;
+            // emptyInventoryItemSpace(i, MAP.players[i].draggingItem);
+            emptyWarehouseItemSpace(i, MAP.players[i].draggingItem);
+        }
+    }
+}
+// inventory
 function placingItemInventory(socketId, mouseCoords) {
     let i = findPlayerIndex(socketId);
     let status = false;
-    // let cellSide = 30;
-    // let itemLeftTopCornerX = mouseCoords.x - Math.floor(MAP.players[i].draggingItem.width / 2 * cellSide);
-    // let itemLeftTopCornerY = mouseCoords.y - Math.floor(MAP.players[i].draggingItem.height / 2 * cellSide);
     console.log(mouseCoords.y, mouseCoords.x);
     if (checkItemCellsReplace(i, mouseCoords.y, mouseCoords.x)) {
         // checking if any free space exists and fitting the object
@@ -899,7 +959,7 @@ function checkItemCellsReplace(playerIndex, i, j) {
     let counter = MAP.players[playerIndex].draggingItem.width * MAP.players[playerIndex].draggingItem.height;
     if (i + MAP.players[playerIndex].draggingItem.height <= 10 &&
         j + MAP.players[playerIndex].draggingItem.width <= 10) {
-        // 10 is the amount of cells in the inventory
+        // 10 is the amount of cells in the inventory width and height
         for (let ii = 0; ii < MAP.players[playerIndex].draggingItem.height; ii++) {
             for (let jj = 0; jj < MAP.players[playerIndex].draggingItem.width; jj++) {
                 if (MAP.players[playerIndex].inventory[i + ii][j + jj] == 0) {
@@ -919,6 +979,7 @@ function fitItemReplace(playerIndex, i, ii, j, jj) {
     // ii - height of an item
     // jj - width of an item
     MAP.players[playerIndex].draggingItem.inBag = true;
+    MAP.players[playerIndex].draggingItem.inWarehouse = false;
     MAP.players[playerIndex].draggingItem.globalX = j;
     MAP.players[playerIndex].draggingItem.globalY = i;
     for (let iii = 0; iii <= ii; iii++) {
@@ -931,14 +992,6 @@ function addToPlayerItemsReplace(playerIndex) {
     MAP.players[playerIndex].items.push(MAP.players[playerIndex].draggingItem);
     MAP.players[playerIndex].draggingItem = null;
 }
-function dropPickedItem(socketId) {
-    let i = findPlayerIndex(socketId);
-    MAP.players[i].draggingItem.globalX = MAP.players[i].globalX;
-    MAP.players[i].draggingItem.globalY = MAP.players[i].globalY;
-    MAP.players[i].draggingItem.inBag = false;
-    MAP.items.push(MAP.players[i].draggingItem);
-    MAP.players[i].draggingItem = {};
-}
 function emptyInventoryItemSpace(playerIndex, draggingItem) {
     // make zeros where the item was located
     for (let i = draggingItem.globalY; i < draggingItem.globalY + draggingItem.height; i++) {
@@ -946,6 +999,25 @@ function emptyInventoryItemSpace(playerIndex, draggingItem) {
             MAP.players[playerIndex].inventory[i][j] = 0;
         }
     }
+}
+function assignPickedItem(socketId, pickedItem) {
+    let i = findPlayerIndex(socketId);
+    for (let j = 0; j < MAP.players[i].items.length; j++) {
+        if (MAP.players[i].items[j].id == pickedItem.id) {
+            MAP.players[i].draggingItem = MAP.players[i].items[j];
+            MAP.players[i].draggingItem.inBag = false;
+            MAP.players[i].items.splice(j, 1);
+            emptyInventoryItemSpace(i, MAP.players[i].draggingItem);
+        }
+    }
+}
+// dropping item
+function dropPickedItem(socketId) {
+    let i = findPlayerIndex(socketId);
+    MAP.players[i].draggingItem.globalX = MAP.players[i].globalX;
+    MAP.players[i].draggingItem.globalY = MAP.players[i].globalY;
+    MAP.items.push(MAP.players[i].draggingItem);
+    MAP.players[i].draggingItem = {};
 }
 function moveAllSkills() {
     for (let i = 0; i < MAP.skills.length; i++) {
@@ -989,16 +1061,27 @@ io.sockets.on('connection', function (socket) {
     socket.on('directing', function (mouseCoords) {
         directPlayer(socket.id, mouseCoords);
     });
+
+    // warehouse general actions
+    socket.on('warehousePickItem', function (pickedItem) {
+        assignPickedItemWarehouse(socket.id, pickedItem);
+    });
+    socket.on('placingItemWarehouse', function (mouseCoords) {
+        let result = placingItemWarehouse(socket.id, mouseCoords);
+        socket.emit('replacingItemWarehouseResult', result);
+    });
+
     // inventory general actions
     socket.on('inventoryPickItem', function (pickedItem) {
         assignPickedItem(socket.id, pickedItem);
     });
-    socket.on('dropPickedItem', function () {
-        dropPickedItem(socket.id);
-    });
     socket.on('placingItemInventory', function (mouseCoords) {
         let result = placingItemInventory(socket.id, mouseCoords);
-        socket.emit('replacingItemResult', result);
+        socket.emit('replacingItemInventoryResult', result);
+    });
+    // dropping item
+    socket.on('dropPickedItem', function () {
+        dropPickedItem(socket.id);
     });
     // pendant actions
     socket.on('takeOutPendant', function () {
