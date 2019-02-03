@@ -280,13 +280,27 @@ function checkState() {
         if (!inventoryStatus) {
             movePlayer();
         } else {
-            if (mouseX < width - inventoryMargin - inventoryWidth ||
-                mouseX > width - inventoryMargin ||
-                mouseY < inventoryMargin ||
-                mouseY > inventoryMargin + inventoryHeight) {
-                movePlayer();
+            if (inventoryStatus) {
+                if (mouseX < width - inventoryMargin - inventoryWidth ||
+                    mouseX > width - inventoryMargin ||
+                    mouseY < inventoryMargin ||
+                    mouseY > inventoryMargin + inventoryHeight) {
+                    movePlayer();
+                }
             }
         }
+        // if (!myHero.warehouse) {
+        //     movePlayer();
+        // } else {
+        //     if (myHero.warehouseOpened) {
+        //         if (mouseX < warehouseGridX ||
+        //             mouseX > warehouseGridX + warehouseWidth ||
+        //             mouseY < warehouseGridY ||
+        //             mouseY > warehouseGridY + warehouseHeight) {
+        //             movePlayer();
+        //         }
+        //     }
+        // }
     }
     // right click of a mouse and hold to use skill every skill refresh seconds
     if (mouseIsPressed && mouseButton == RIGHT && mouseX > 0 && mouseX < width && mouseY > 0 && mouseY < height) {
@@ -338,16 +352,16 @@ function mousePressed() {
                         });
                     } else {
                         // Pick an item up
-                        myHero.items.forEach(function (item) {
-                            if (mouseX > gridX + item.globalX * cellSide &&
-                                mouseX < gridX + (item.globalX + item.width) * cellSide &&
-                                mouseY > gridY + item.globalY * cellSide &&
-                                mouseY < gridY + (item.globalY + item.height) * cellSide) {
-                                pickedItem = item;
+                        for (let i = 0; i < myHero.items.length; i++) {
+                            if (mouseX > gridX + myHero.items[i].globalX * cellSide &&
+                                mouseX < gridX + (myHero.items[i].globalX + myHero.items[i].width) * cellSide &&
+                                mouseY > gridY + myHero.items[i].globalY * cellSide &&
+                                mouseY < gridY + (myHero.items[i].globalY + myHero.items[i].height) * cellSide) {
+                                pickedItem = myHero.items[i];
                                 itemPickedStatus = true;
                                 socket.emit('inventoryPickItem', pickedItem);
                             }
-                        });
+                        }
                     }
                 }
                 // dealing with a pendant slot in the inventory
@@ -553,7 +567,11 @@ function mousePressed() {
         let localWarehouseCenterY = localMapY + state.cityStartY + state.city.warehouse.globalY;
         // kind of a radius for the warehouse center
         if (dist(mouseX, mouseY, localWarehouseCenterX, localWarehouseCenterY) < state.city.warehouse.side / 2) {
-            socket.emit('openWarehouse');
+            if (dist(localX, localY, localWarehouseCenterX, localWarehouseCenterY) > state.city.warehouse.activeRadius) {
+                movePlayer();
+            } else {
+                socket.emit('openWarehouse');
+            }
         } else {
             socket.emit('usingSkill');
         }
@@ -565,7 +583,9 @@ function updateCoordinates() {
 }
 function mouseMoved() {
     determineMouseAngle();
-    mouseHover();
+    if (state.city) {
+        mouseHover();
+    }
 }
 function mouseHover() {
     let localWarehouseCenterX = localMapX + state.cityStartX + state.city.warehouse.globalX;
