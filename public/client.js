@@ -223,7 +223,12 @@ function level() {
     rect(10, 10, 30, 30);
     fill(0, 0, 0);
     textSize(20);
-    text('4', 14, 33);
+    if (myHero.level > 9) {
+        text(myHero.level, 14, 33);
+    } else {
+        text(myHero.level, 14 + 6, 33);
+    }
+
     pop();
 }
 function nickname() {
