@@ -143,14 +143,12 @@ function drawWarehouse() {
         hoverItemWarehouse();
     }
 }
-
 function addWarehouseItems(cellSide) {
     for (let i = 0; i < myHero.warehouseItems.length; i++) {
         fill(myHero.warehouseItems[i].colorR, myHero.warehouseItems[i].colorG, myHero.warehouseItems[i].colorB);
         rect(myHero.warehouseItems[i].globalX * cellSide, myHero.warehouseItems[i].globalY * cellSide, myHero.warehouseItems[i].width * cellSide, myHero.warehouseItems[i].height * cellSide);
     }
 }
-
 function drawWarehouseShop() {
     let localWarehouseX = localMapX + state.city.warehouse.globalX + state.cityStartX;
     let localWarehouseY = localMapY + state.city.warehouse.globalY + state.cityStartY;
@@ -159,7 +157,6 @@ function drawWarehouseShop() {
     ellipse(localWarehouseX, localWarehouseY, state.city.warehouse.side);
     pop();
 }
-
 function draggingPickedItem() {
     push();
     fill(myHero.draggingItem.colorR, myHero.draggingItem.colorG, myHero.draggingItem.colorB);
@@ -221,8 +218,13 @@ function frame() {
     rect(0, 0, statusBarWidth, statusBarHeight);
 }
 function level() {
+    push();
     fill(255, 255, 255);
     rect(10, 10, 30, 30);
+    fill(0, 0, 0);
+    textSize(20);
+    text('4', 14, 33);
+    pop();
 }
 function nickname() {
     rect(50, 10, 260, 30);
