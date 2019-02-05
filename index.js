@@ -1,6 +1,8 @@
 let express = require('express');
 let socket = require('socket.io');
 
+// items id system will be global for the whole server have bunch of zeros like 1000000000000000001 , 2, 3 etc
+
 // App setup
 let app = express();
 let server = app.listen(4000, function () {
@@ -145,7 +147,7 @@ class Monster {
 }
 
 class City {
-    constructor(name, width, height, shops, respawnStartX, respawnEndX, respawnStartY, respawnEndY, warehouse) {
+    constructor(name, width, height, jewelryShop, respawnStartX, respawnEndX, respawnStartY, respawnEndY, warehouse) {
         this.name = name;
         this.width = width;
         this.height = height;
@@ -153,7 +155,7 @@ class City {
         this.respawnEndX = respawnEndX;
         this.respawnStartY = respawnStartY;
         this.respawnEndY = respawnEndY;
-        this.shops = shops;
+        this.jewelryShop = jewelryShop;
         this.warehouse = warehouse
     }
 }
@@ -219,6 +221,7 @@ class Player {
             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         ];
         this.warehouseOpened = false;
+        this.jewelryShopOpened = false;
     };
 
     direct(x, y, angle) {
@@ -443,41 +446,44 @@ function createDeviasCity() {
     let respawnEndX = width - respawnStartX;
     let respawnStartY = 100;
     let respawnEndY = height - respawnStartY;
-    let shops = [{
+    let jewelryShop = {
         name: 'jewelry shop',
-        globalX: 400,
-        globalY: 100,
+        globalX: 500,
+        globalY: 500,
         side: 50,
+        activeRadius: 100,
         shopItems: [{
-            id: 521021,
+            id: 721021,
             inBag: false,
             inWarehouse: false,
             inShop: true,
+            buyPrice: 650,
             width: 1,
             height: 1,
             type: 'pendant',
             name: 'pendant of fire lvl2',
-            colorR: 100,
-            colorG: 20,
-            colorB: 150,
-            globalX: 600,
-            globalY: 600
+            colorR: 150,
+            colorG: 70,
+            colorB: 200,
+            globalX: 0,
+            globalY: 0
         }, {
-            id: 990998,
+            id: 290998,
             inBag: false,
             inWarehouse: false,
             inShop: true,
+            buyPrice: 650,
             width: 1,
             height: 1,
             type: 'ring',
             name: 'ring of poison lvl2',
-            colorR: 230,
-            colorG: 200,
-            colorB: 190,
-            globalX: 900,
-            globalY: 900
+            colorR: 280,
+            colorG: 250,
+            colorB: 240,
+            globalX: 1,
+            globalY: 0
         }]
-    }];
+    };
     let warehouse = {
         name: 'warehouse',
         activeRadius: 100,
@@ -485,7 +491,7 @@ function createDeviasCity() {
         globalY: 100,
         side: 50 // every shop will have a side of the effecting area to be able to click on the shop
     };
-    deviasCity = new City(name, width, height, shops, respawnStartX, respawnEndX, respawnStartY, respawnEndY, warehouse);
+    deviasCity = new City(name, width, height, jewelryShop, respawnStartX, respawnEndX, respawnStartY, respawnEndY, warehouse);
 }
 
 function addNewPlayer(id, nickname, race) {
@@ -516,6 +522,7 @@ function fakeItem() {
         height: 1,
         type: 'pendant',
         name: 'pendant of fire',
+        sellPrice: 1000,
         colorR: 100,
         colorG: 20,
         colorB: 150,
@@ -532,6 +539,7 @@ function fakeItem() {
         height: 1,
         type: 'pendant',
         name: 'pendant of ice',
+        sellPrice: 1000,
         colorR: 50,
         colorG: 220,
         colorB: 130,
@@ -549,6 +557,7 @@ function fakeItem() {
         height: 1,
         type: 'ring',
         name: 'ring of poison',
+        sellPrice: 1000,
         colorR: 230,
         colorG: 200,
         colorB: 190,
@@ -565,6 +574,7 @@ function fakeItem() {
         height: 1,
         type: 'ring',
         name: 'ring of heart',
+        sellPrice: 1000,
         colorR: 190,
         colorG: 240,
         colorB: 220,
@@ -582,6 +592,7 @@ function fakeItem() {
         height: 3,
         type: 'wingCape',
         name: 'dragon wings',
+        sellPrice: 1000,
         colorR: 87,
         colorG: 20,
         colorB: 210,
@@ -598,6 +609,7 @@ function fakeItem() {
         height: 3,
         type: 'wingCape',
         name: 'angel wings',
+        sellPrice: 1000,
         colorR: 187,
         colorG: 40,
         colorB: 150,
@@ -615,6 +627,7 @@ function fakeItem() {
         height: 4,
         type: 'weapon',
         name: 'dragon Sword',
+        sellPrice: 1000,
         colorR: 187,
         colorG: 20,
         colorB: 110,
@@ -631,6 +644,7 @@ function fakeItem() {
         height: 4,
         type: 'weapon',
         name: 'angel sword',
+        sellPrice: 1000,
         colorR: 217,
         colorG: 140,
         colorB: 10,
@@ -648,6 +662,7 @@ function fakeItem() {
         height: 4,
         type: 'weapon',
         name: 'dragon Sword',
+        sellPrice: 1000,
         colorR: 17,
         colorG: 90,
         colorB: 80,
@@ -664,6 +679,7 @@ function fakeItem() {
         height: 4,
         type: 'weapon',
         name: 'angel sword',
+        sellPrice: 1000,
         colorR: 27,
         colorG: 1,
         colorB: 90,
@@ -947,6 +963,12 @@ function moveAllPlayers() {
                 MAP.players[i].warehouseOpened = false;
             }
         }
+        if (MAP.players[i].jewelryShopOpened) {
+            if (distance(MAP.players[i].globalX, MAP.players[i].globalY, MAP.cityStartX + MAP.city.jewelryShop.globalX, MAP.cityStartY + MAP.city.jewelryShop.globalY) > MAP.city.jewelryShop.activeRadius) {
+                console.log('closing');
+                MAP.players[i].jewelryShopOpened = false;
+            }
+        }
     }
 }
 function assignNewAngle(socketId, angle) {
@@ -1107,12 +1129,77 @@ function dropPickedItem(socketId) {
     MAP.items.push(MAP.players[i].draggingItem);
     MAP.players[i].draggingItem = {};
 }
+// jewelryShop
+function sellItem(socketId) {
+    let i = findPlayerIndex(socketId);
+    MAP.players[i].gold += MAP.players[i].draggingItem.sellPrice;
+    MAP.players[i].draggingItem = {};
+}
+function buyJewelryItem(socketId, itemIndex) {
+    let i = findPlayerIndex(socketId);
+    // check for gold and free space in the inventory before buying an item
+    let inventoryFitCoords = false;
+    inventoryFitCoords = checkItemFitInventory(i, MAP.city.jewelryShop.shopItems[itemIndex]);
+    console.log('buying');
+    if (MAP.players[i].gold >= MAP.city.jewelryShop.shopItems[itemIndex].buyPrice && inventoryFitCoords) {
+        let randomId = getRandomInt(10000);
+        let buyingItem = Object.assign({}, MAP.city.jewelryShop.shopItems[itemIndex]);
+        MAP.players[i].gold -= MAP.city.jewelryShop.shopItems[itemIndex].buyPrice;
+        // modify buying item after chargin a player an item price
+        buyingItem.sellPrice = MAP.city.jewelryShop.shopItems[itemIndex].buyPrice * 0.5;
+        buyingItem.buyPrice = null;
+        buyingItem.inShop = false;
+        buyingItem.id -= randomId; // to make every bought item have differnet id later will be changed for a better global function
+        // items will have id only when they are bough. id will be generated by a separate function
+        fitItemShop(i, buyingItem, inventoryFitCoords.column, inventoryFitCoords.row);
+    }
+}
+function fitItemShop(playerIndex, fittingItem, column, row) {
+    // ii - height of an item
+    // jj - width of an item
+    fittingItem.inBag = true;
+    fittingItem.globalX = column;
+    fittingItem.globalY = row;
+    for (let j = 0; j < fittingItem.height; j++) {
+        for (let i = 0; i < fittingItem.width; i++) {
+            MAP.players[playerIndex].inventory[row + j][column + i] = 1;
+        }
+    }
+    MAP.players[playerIndex].items.push(fittingItem);
+}
+
+// check if an item fits to inventory
+function checkItemFitInventory(playerIndex, item) {
+    let inventoryHeight = 10;
+    let inventoryWidth = 10;
+    for (let y = 0; y < inventoryHeight - item.height; y++) {
+        for (let x = 0; x < inventoryWidth - item.width; x++) {
+            let counter = item.width * item.height;
+            for (let h = 0; h < item.height; h++) {
+                for (let w = 0; w < item.width; w++) {
+                    if (MAP.players[playerIndex].inventory[y + h][x + w] == 0) {
+                        counter--;
+                        if (counter == 0) {
+                            let inventoryFitCoords = {
+                                row: y,
+                                column: x
+                            }
+                            return inventoryFitCoords;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+
 function moveAllSkills() {
     for (let i = 0; i < MAP.skills.length; i++) {
         MAP.skills[i].move();
     }
 }
-
 function moveAllMonsters() {
     for (let i = 0; i < MAP.monsters.length; i++) {
         MAP.monsters[i].observe();
@@ -1121,12 +1208,19 @@ function moveAllMonsters() {
         }
     }
 }
-
 function openWarehouse(socketId) {
     let i = findPlayerIndex(socketId);
     if (!MAP.players[i].warehouseOpened) {
         if (distance(MAP.players[i].globalX, MAP.players[i].globalY, MAP.cityStartX + MAP.city.warehouse.globalX, MAP.cityStartY + MAP.city.warehouse.globalY) <= MAP.city.warehouse.activeRadius) {
             MAP.players[i].warehouseOpened = true;
+        }
+    }
+}
+function openJewelryShop(socketId) {
+    let i = findPlayerIndex(socketId);
+    if (!MAP.players[i].jewelryShopOpened) {
+        if (distance(MAP.players[i].globalX, MAP.players[i].globalY, MAP.cityStartX + MAP.city.jewelryShop.globalX, MAP.cityStartY + MAP.city.jewelryShop.globalY) <= MAP.city.jewelryShop.activeRadius) {
+            MAP.players[i].jewelryShopOpened = true;
         }
     }
 }
@@ -1180,6 +1274,14 @@ io.sockets.on('connection', function (socket) {
     socket.on('placingItemWarehouse', function (mouseCoords) {
         let result = placingItemWarehouse(socket.id, mouseCoords);
         socket.emit('replacingItemWarehouseResult', result);
+    });
+
+    // jewelryShop actions
+    socket.on('sellItem', function () {
+        sellItem(socket.id);
+    });
+    socket.on('buyJewelryItem', function (i) {
+        buyJewelryItem(socket.id, i);
     });
 
     // inventory general actions
@@ -1262,5 +1364,8 @@ io.sockets.on('connection', function (socket) {
     });
     socket.on('openWarehouse', function () {
         openWarehouse(socket.id);
+    });
+    socket.on('openJewelryShop', function () {
+        openJewelryShop(socket.id);
     });
 });

@@ -120,8 +120,48 @@ function draw() {
 }
 function drawShops() {
     drawWarehouseShop();
-    if (myHero.warehouseOpened) {
+    drawJewelryShop();
+    if (myHero.jewelryShopOpened) {
+        drawJewelry();
+    } else if (myHero.warehouseOpened) {
         drawWarehouse();
+    }
+}
+function drawJewelry() {
+    push();
+    stroke(0, 0, 0);
+    strokeWeight(1);
+    fill(150, 150, 150);
+    translate(warehouseGridX, warehouseGridY)
+    rect(0, 0, warehouseWidth, warehouseHeight);
+    fill(175, 175, 175);
+    grid(0, 0, gridWarehousedWidth, gridWarehouseHeight, cellSide);
+    if (state.city.jewelryShop.shopItems.length > 0) {
+        addJewelryShopItems(cellSide);
+    }
+    pop();
+    // change to warehouse gridX and gridY and gridWidth and gridHeight
+    if (mouseX > warehouseGridX && mouseX < warehouseMargin + warehouseWidth &&
+        mouseY > warehouseGridY && mouseY < warehouseMargin + warehouseHeight) {
+        hoverItemWarehouse();
+    }
+}
+function addJewelryShopItems(cellSide) {
+    for (let i = 0; i < state.city.jewelryShop.shopItems.length; i++) {
+        fill(state.city.jewelryShop.shopItems[i].colorR, state.city.jewelryShop.shopItems[i].colorG, state.city.jewelryShop.shopItems[i].colorB);
+        rect(state.city.jewelryShop.shopItems[i].globalX * cellSide, state.city.jewelryShop.shopItems[i].globalY * cellSide, state.city.jewelryShop.shopItems[i].width * cellSide, state.city.jewelryShop.shopItems[i].height * cellSide);
+    }
+}
+function hoverItemJewelryShop() {
+    if (!itemPickedStatus) {
+        state.city.jewelryShop.shopItems.forEach(function (jewelryItem) {
+            if (mouseX > warehouseGridX + jewelryItem.globalX * cellSide &&
+                mouseX < warehouseGridX + (jewelryItem.globalX + jewelryItem.width) * cellSide &&
+                mouseY > warehouseGridY + jewelryItem.globalY * cellSide &&
+                mouseY < warehouseGridY + (jewelryItem.globalY + jewelryItem.height) * cellSide) {
+                showItemInfo();
+            }
+        });
     }
 }
 function drawWarehouse() {
@@ -155,6 +195,14 @@ function drawWarehouseShop() {
     push();
     fill(0, 0, debugColor);
     ellipse(localWarehouseX, localWarehouseY, state.city.warehouse.side);
+    pop();
+}
+function drawJewelryShop() {
+    let localJewelryShopX = localMapX + state.city.jewelryShop.globalX + state.cityStartX;
+    let localJewelryShopY = localMapY + state.city.jewelryShop.globalY + state.cityStartY;
+    push();
+    fill(0, 0, debugColor);
+    ellipse(localJewelryShopX, localJewelryShopY, state.city.jewelryShop.side);
     pop();
 }
 function draggingPickedItem() {
@@ -223,12 +271,13 @@ function level() {
     rect(10, 10, 30, 30);
     fill(0, 0, 0);
     textSize(20);
-    if (myHero.level > 9) {
-        text(myHero.level, 14, 33);
-    } else {
-        text(myHero.level, 14 + 6, 33);
+    if (myHero.level) {
+        if (myHero.level > 9) {
+            text(myHero.level, 14, 33);
+        } else {
+            text(myHero.level, 14 + 6, 33);
+        }
     }
-
     pop();
 }
 function nickname() {
@@ -326,7 +375,7 @@ function checkState() {
         state = refreshedState;
     });
     // left click of a mouse and hold to move the player non stop
-    if (!inventoryStatus && !myHero.warehouseOpened) {
+    if (!inventoryStatus && !myHero.warehouseOpened && !myHero.jewelryShopOpened) {
         if (mouseIsPressed && mouseButton == LEFT && mouseX > 0 && mouseX < width && mouseY > 0 && mouseY < height) {
             movePlayer();
         }
@@ -362,7 +411,7 @@ function mousePressed() {
                     });
                 } else {
                     // no item is picked and clicking on a warehouse area
-                    for (let i = 0; i < myHero.items.length; i++) {
+                    for (let i = 0; i < myHero.warehouseItems.length; i++) {
                         if (mouseX > warehouseGridX + myHero.warehouseItems[i].globalX * cellSide &&
                             mouseX < warehouseGridX + (myHero.warehouseItems[i].globalX + myHero.warehouseItems[i].width) * cellSide &&
                             mouseY > warehouseGridY + myHero.warehouseItems[i].globalY * cellSide &&
@@ -373,8 +422,26 @@ function mousePressed() {
                         }
                     }
                 }
+            } else if (myHero.jewelryShopOpened) {
+                // clicking in jewelryshop grid while the jewelryshop is ooened
+                if (itemPickedStatus) {
+                    // clicking on a jewelryshop area having an item picked
+                    socket.emit('sellItem');
+                    pickedItem = {};
+                    itemPickedStatus = false;
+                } else {
+                    // no item is picked and clicking on a jewelryshop area
+                    for (let i = 0; i < state.city.jewelryShop.shopItems.length; i++) {
+                        if (mouseX > warehouseGridX + state.city.jewelryShop.shopItems[i].globalX * cellSide &&
+                            mouseX < warehouseGridX + (state.city.jewelryShop.shopItems[i].globalX + state.city.jewelryShop.shopItems[i].width) * cellSide &&
+                            mouseY > warehouseGridY + state.city.jewelryShop.shopItems[i].globalY * cellSide &&
+                            mouseY < warehouseGridY + (state.city.jewelryShop.shopItems[i].globalY + state.city.jewelryShop.shopItems[i].height) * cellSide) {
+                            socket.emit('buyJewelryItem', i);
+                        }
+                    }
+                }
             } else {
-                // warehoue is closed
+                // warehouse grid is closed
                 if (itemPickedStatus) {
                     // clicking on the area of warehouse when its closed and having item picked
                     dropPickedItem();
@@ -632,12 +699,20 @@ function mousePressed() {
     } else if (mouseButton == RIGHT && mouseX > 0 && mouseX < width && mouseY > 0 && mouseY < height) {
         let localWarehouseCenterX = localMapX + state.cityStartX + state.city.warehouse.globalX;
         let localWarehouseCenterY = localMapY + state.cityStartY + state.city.warehouse.globalY;
+        let localJewelryShopCenterX = localMapX + state.cityStartX + state.city.jewelryShop.globalX;
+        let localJewelryShopCenterY = localMapY + state.cityStartY + state.city.jewelryShop.globalY;
         // kind of a radius for the warehouse center
         if (dist(mouseX, mouseY, localWarehouseCenterX, localWarehouseCenterY) < state.city.warehouse.side / 2) {
             if (dist(localX, localY, localWarehouseCenterX, localWarehouseCenterY) > state.city.warehouse.activeRadius) {
                 movePlayer();
             } else {
                 socket.emit('openWarehouse');
+            }
+        } else if (dist(mouseX, mouseY, localJewelryShopCenterX, localJewelryShopCenterY) < state.city.jewelryShop.side / 2) {
+            if (dist(localX, localY, localJewelryShopCenterX, localJewelryShopCenterY) > state.city.jewelryShop.activeRadius) {
+                movePlayer();
+            } else {
+                socket.emit('openJewelryShop');
             }
         } else {
             socket.emit('usingSkill');
@@ -657,10 +732,13 @@ function mouseMoved() {
 function mouseHover() {
     let localWarehouseCenterX = localMapX + state.cityStartX + state.city.warehouse.globalX;
     let localWarehouseCenterY = localMapY + state.cityStartY + state.city.warehouse.globalY;
+    let localJewelryShopCenterX = localMapX + state.cityStartX + state.city.jewelryShop.globalX;
+    let localJewelryShopCenterY = localMapY + state.cityStartY + state.city.jewelryShop.globalY;
     if (itemPickedStatus) {
         noCursor();
     } else {
-        if (dist(mouseX, mouseY, localWarehouseCenterX, localWarehouseCenterY) < state.city.warehouse.side / 2) {
+        if (dist(mouseX, mouseY, localWarehouseCenterX, localWarehouseCenterY) < state.city.warehouse.side / 2 ||
+            dist(mouseX, mouseY, localJewelryShopCenterX, localJewelryShopCenterY) < state.city.jewelryShop.side / 2) {
             cursor('help');
         } else {
             cursor('auto');
@@ -751,7 +829,6 @@ function keyPressed() {
         socket.emit('pickitup');
         //addItem();
     };
-    //console.log(key.charCodeAt(0));
     if (key.charCodeAt(0) == 118) {
         if (inventoryStatus) {
             inventoryStatus = false;
