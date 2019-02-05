@@ -204,6 +204,11 @@ function drawJewelryShop() {
     fill(0, 0, debugColor);
     ellipse(localJewelryShopX, localJewelryShopY, state.city.jewelryShop.side);
     pop();
+    // for shop items hover
+    if (mouseX > warehouseGridX && mouseX < warehouseMargin + warehouseWidth &&
+        mouseY > warehouseGridY && mouseY < warehouseMargin + warehouseHeight) {
+        hoverItemJewelryShop();
+    }
 }
 function draggingPickedItem() {
     push();
