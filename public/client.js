@@ -281,7 +281,15 @@ function level() {
     pop();
 }
 function nickname() {
+    push();
     rect(50, 10, 260, 30);
+    noStroke();
+    fill(0, 0, 0);
+    textSize(20);
+    if (myHero.nickname) {
+        text(myHero.nickname, 60, 33);
+    }
+    pop();
 }
 function healthBar() {
     let factor = myHero.maxHealth / barLength;
