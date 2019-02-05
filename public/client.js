@@ -16,7 +16,6 @@ let gridX;
 let gridY;
 let debugColor = 50;
 
-
 let leftWeaponX = 15;
 let weaponY = 15;
 let rightWeaponX = 225;
@@ -50,10 +49,12 @@ let infoMargin = 10;
 let itemInfoWidth = 200;
 let itemInfoHeight = 300;
 
-
 let inventoryWidth = 300;
 let inventoryMargin = 20;
 let inventoryHeight = 510;
+let inventoryX = null;
+let inventoryY = inventoryMargin;
+
 let gridWidth = 300;
 let gridHeight = 300;
 let wearablesHeight = 150;
@@ -73,6 +74,7 @@ let gridWarehouseHeight = 480; // to be fixed later
 
 function setup() {
     createCanvas(1000, 680);
+    inventoryX = width - inventoryMargin - inventoryWidth; // because it depends on width have to make it after setup is run
     socket.emit('joined', {
         nickname: 'Kurush',
         race: 'Mage'
@@ -876,16 +878,16 @@ function drawInventory() {
     }
     pop();
     if (!itemPickedStatus) {
-        if (mouseX > gridX + heroInfoX &&
-            mouseX < gridX + heroInfoX + heroInfoSide &&
-            mouseY > gridY + heroInfoY &&
-            mouseY < gridY + heroInfoY + heroInfoSide) {
-            showInventoryHeroInfo();
+        if (mouseX > inventoryX && mouseX < inventoryX + inventoryWidth &&
+            mouseY > inventoryY && mouseY < inventoryY + inventoryHeight) {
+            hoverItem();
+            if (mouseX > gridX + heroInfoX &&
+                mouseX < gridX + heroInfoX + heroInfoSide &&
+                mouseY > gridY + heroInfoY &&
+                mouseY < gridY + heroInfoY + heroInfoSide) {
+                showInventoryHeroInfo();
+            }
         }
-    }
-    if (mouseX > gridX && mouseX < gridX + gridWidth &&
-        mouseY > gridY && mouseY < gridY + gridHeight) {
-        hoverItem();
     }
 }
 function dressUp() {
@@ -970,16 +972,50 @@ function showInventoryHeroInfo() {
     pop();
 }
 function hoverItem() {
-    if (!itemPickedStatus) {
-        myHero.items.forEach(function (item) {
-            if (mouseX > gridX + item.globalX * cellSide &&
-                mouseX < gridX + (item.globalX + item.width) * cellSide &&
-                mouseY > gridY + item.globalY * cellSide &&
-                mouseY < gridY + (item.globalY + item.height) * cellSide) {
-                showItemInfo(item);
-            }
-        });
+    if (myHero.leftWeapon && mouseX > inventoryX + leftWeaponX &&
+        mouseX < inventoryX + inventoryWidth + leftWeaponX + weaponWidth &&
+        mouseY > inventoryY + weaponY &&
+        mouseY < inventoryY + weaponY + weaponHeight) {
+        showItemInfo(myHero.leftWeapon);
     }
+    if (myHero.rightWeapon && mouseX > inventoryX + rightWeaponX &&
+        mouseX < inventoryX + inventoryWidth + rightWeaponX + weaponWidth &&
+        mouseY > inventoryY + weaponY &&
+        mouseY < inventoryY + weaponY + weaponHeight) {
+        showItemInfo(myHero.rightWeapon);
+    }
+    if (myHero.wingCape && mouseX > inventoryX + wingCapeX &&
+        mouseX < inventoryX + inventoryWidth + wingCapeX + wingCapeWidth &&
+        mouseY > inventoryY + wingCapeY &&
+        mouseY < inventoryY + wingCapeY + wingCapeHeight) {
+        showItemInfo(myHero.wingCape);
+    }
+    if (myHero.leftRing && mouseX > inventoryX + leftRingX &&
+        mouseX < inventoryX + inventoryWidth + leftRingX + ringPendantSide &&
+        mouseY > inventoryY + ringPendantY &&
+        mouseY < inventoryY + ringPendantY + ringPendantSide) {
+        showItemInfo(myHero.leftRing);
+    }
+    if (myHero.rightRing && mouseX > inventoryX + rightRingX &&
+        mouseX < inventoryX + inventoryWidth + rightRingX + ringPendantSide &&
+        mouseY > inventoryY + ringPendantY &&
+        mouseY < inventoryY + ringPendantY + ringPendantSide) {
+        showItemInfo(myHero.rightRing);
+    }
+    if (myHero.pendant && mouseX > inventoryX + pendantX &&
+        mouseX < inventoryX + inventoryWidth + pendantX + ringPendantSide &&
+        mouseY > inventoryY + ringPendantY &&
+        mouseY < inventoryY + ringPendantY + ringPendantSide) {
+        showItemInfo(myHero.pendant);
+    }
+    myHero.items.forEach(function (item) {
+        if (mouseX > gridX + item.globalX * cellSide &&
+            mouseX < gridX + (item.globalX + item.width) * cellSide &&
+            mouseY > gridY + item.globalY * cellSide &&
+            mouseY < gridY + (item.globalY + item.height) * cellSide) {
+            showItemInfo(item);
+        }
+    });
 }
 function hoverItemWarehouse() {
     if (!itemPickedStatus) {
