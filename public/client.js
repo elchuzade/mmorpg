@@ -159,7 +159,7 @@ function hoverItemJewelryShop() {
                 mouseX < warehouseGridX + (jewelryItem.globalX + jewelryItem.width) * cellSide &&
                 mouseY > warehouseGridY + jewelryItem.globalY * cellSide &&
                 mouseY < warehouseGridY + (jewelryItem.globalY + jewelryItem.height) * cellSide) {
-                showItemInfo();
+                showItemInfo(jewelryItem);
             }
         });
     }
@@ -976,7 +976,7 @@ function hoverItem() {
                 mouseX < gridX + (item.globalX + item.width) * cellSide &&
                 mouseY > gridY + item.globalY * cellSide &&
                 mouseY < gridY + (item.globalY + item.height) * cellSide) {
-                showItemInfo();
+                showItemInfo(item);
             }
         });
     }
@@ -988,15 +988,19 @@ function hoverItemWarehouse() {
                 mouseX < warehouseGridX + (warehouseItem.globalX + warehouseItem.width) * cellSide &&
                 mouseY > warehouseGridY + warehouseItem.globalY * cellSide &&
                 mouseY < warehouseGridY + (warehouseItem.globalY + warehouseItem.height) * cellSide) {
-                showItemInfo();
+                showItemInfo(warehouseItem);
             }
         });
     }
 }
-function showItemInfo() {
+function showItemInfo(item) {
     push();
     translate(gridX - itemInfoWidth - infoMargin, gridY - itemInfoHeight / 2);
     fill(200, 200, 200);
     rect(0, 0, itemInfoWidth, itemInfoHeight);
+    textSize(20);
+    stroke(0, 0, 0);
+    fill(0, 0, 0);
+    text(item.name, 20, 20);
     pop();
 }
