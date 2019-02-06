@@ -15,6 +15,8 @@ let cellSide = 30; // size of a cell in inventory
 let gridX;
 let gridY;
 let debugColor = 50;
+let miniMapHeight = 150;
+let miniMapMargin = 20;
 
 let leftWeaponX = 15;
 let weaponY = 15;
@@ -99,6 +101,7 @@ function draw() {
         drawCity();
         //drawGrid();
         drawLimits();
+        miniMap();
         drawShops();
         if (state.skills) {
             drawRoundSkill(); // draw all skills will be in future
@@ -120,15 +123,41 @@ function draw() {
     checkState();
     writeMouseCoordinates();
 }
-function drawShops() {
-    drawWarehouseShop();
-    drawJewelryShop();
-    if (myHero.jewelryShopOpened) {
-        drawJewelry();
-    } else if (myHero.warehouseOpened) {
-        drawWarehouse();
+// WAREHOUSE
+function drawWarehouse() {
+    push();
+    stroke(0, 0, 0);
+    strokeWeight(1);
+    fill(150, 150, 150);
+    translate(warehouseGridX, warehouseGridY)
+    rect(0, 0, warehouseWidth, warehouseHeight);
+    fill(175, 175, 175);
+    grid(0, 0, gridWarehousedWidth, gridWarehouseHeight, cellSide);
+    if (myHero.warehouseItems.length > 0) {
+        addWarehouseItems(cellSide);
+    }
+    pop();
+    // change to warehouse gridX and gridY and gridWidth and gridHeight
+    if (mouseX > warehouseGridX && mouseX < warehouseMargin + warehouseWidth &&
+        mouseY > warehouseGridY && mouseY < warehouseMargin + warehouseHeight) {
+        hoverItemWarehouse();
     }
 }
+function addWarehouseItems(cellSide) {
+    for (let i = 0; i < myHero.warehouseItems.length; i++) {
+        fill(myHero.warehouseItems[i].colorR, myHero.warehouseItems[i].colorG, myHero.warehouseItems[i].colorB);
+        rect(myHero.warehouseItems[i].globalX * cellSide, myHero.warehouseItems[i].globalY * cellSide, myHero.warehouseItems[i].width * cellSide, myHero.warehouseItems[i].height * cellSide);
+    }
+}
+function drawWarehouseShop() {
+    let localWarehouseX = localMapX + state.city.warehouse.globalX + state.cityStartX;
+    let localWarehouseY = localMapY + state.city.warehouse.globalY + state.cityStartY;
+    push();
+    fill(0, 0, debugColor);
+    ellipse(localWarehouseX, localWarehouseY, state.city.warehouse.side);
+    pop();
+}
+// JEWELRY SHOP
 function drawJewelry() {
     push();
     stroke(0, 0, 0);
@@ -166,39 +195,6 @@ function hoverItemJewelryShop() {
         });
     }
 }
-function drawWarehouse() {
-    push();
-    stroke(0, 0, 0);
-    strokeWeight(1);
-    fill(150, 150, 150);
-    translate(warehouseGridX, warehouseGridY)
-    rect(0, 0, warehouseWidth, warehouseHeight);
-    fill(175, 175, 175);
-    grid(0, 0, gridWarehousedWidth, gridWarehouseHeight, cellSide);
-    if (myHero.warehouseItems.length > 0) {
-        addWarehouseItems(cellSide);
-    }
-    pop();
-    // change to warehouse gridX and gridY and gridWidth and gridHeight
-    if (mouseX > warehouseGridX && mouseX < warehouseMargin + warehouseWidth &&
-        mouseY > warehouseGridY && mouseY < warehouseMargin + warehouseHeight) {
-        hoverItemWarehouse();
-    }
-}
-function addWarehouseItems(cellSide) {
-    for (let i = 0; i < myHero.warehouseItems.length; i++) {
-        fill(myHero.warehouseItems[i].colorR, myHero.warehouseItems[i].colorG, myHero.warehouseItems[i].colorB);
-        rect(myHero.warehouseItems[i].globalX * cellSide, myHero.warehouseItems[i].globalY * cellSide, myHero.warehouseItems[i].width * cellSide, myHero.warehouseItems[i].height * cellSide);
-    }
-}
-function drawWarehouseShop() {
-    let localWarehouseX = localMapX + state.city.warehouse.globalX + state.cityStartX;
-    let localWarehouseY = localMapY + state.city.warehouse.globalY + state.cityStartY;
-    push();
-    fill(0, 0, debugColor);
-    ellipse(localWarehouseX, localWarehouseY, state.city.warehouse.side);
-    pop();
-}
 function drawJewelryShop() {
     let localJewelryShopX = localMapX + state.city.jewelryShop.globalX + state.cityStartX;
     let localJewelryShopY = localMapY + state.city.jewelryShop.globalY + state.cityStartY;
@@ -212,54 +208,7 @@ function drawJewelryShop() {
         hoverItemJewelryShop();
     }
 }
-function draggingPickedItem() {
-    push();
-    fill(myHero.draggingItem.colorR, myHero.draggingItem.colorG, myHero.draggingItem.colorB);
-    translate(mouseX, mouseY);
-    rect(0, 0, myHero.draggingItem.width * cellSide, myHero.draggingItem.height * cellSide);
-    pop();
-}
-function drawRoundSkill() {
-    for (let i = 0; i < state.skills.length; i++) {
-        if (state.skills[i].name == 'hellfire') {
-            let localSkillX = localMapX + state.skills[i].globalX;
-            let localSkillY = localMapY + state.skills[i].globalY;
-            push();
-            fill(200, 0, 200);
-            ellipse(localSkillX, localSkillY, state.skills[i].radius * 2);
-            pop();
-        }
-    }
-}
-function drawMonsters() {
-    for (let i = 0; i < state.monsters.length; i++) {
-        let localMonsterX = localMapX + state.monsters[i].globalX;
-        let localMonsterY = localMapY + state.monsters[i].globalY;
-        //let monsterMouseAngle = state.players[i].angle;
-        push();
-        fill(255, 0, 0);
-        noStroke();
-        ellipse(localMonsterX, localMonsterY, 50);
-        pop();
-    }
-}
-function writeMouseCoordinates() {
-    push();
-    textSize(20);
-    fill(255, 255, 255);
-    text(mouseX + ' : ' + mouseY, mouseX - 100, mouseY + 20);
-    pop();
-}
-function drawUI() {
-    push();
-    translate(statusBarMargin, statusBarMargin);
-    statusBar();
-    //buffBar();
-    //skillBar();
-    //menuBar();
-    //miniMap();
-    pop();
-}
+// DRAW STATUS BAR
 function statusBar() {
     frame();
     level();
@@ -349,6 +298,7 @@ function expBar() {
     text(myHero.experience + ' / ' + myHero.maxExperience, 20, 126);
     pop();
 }
+// DRAWING MAP, CITY, SHOPS, MINIMAP & UI
 function drawMap() {
     push();
     fill(30, 30, 30);
@@ -362,47 +312,110 @@ function drawCity() {
     rect(state.cityStartX, state.cityStartY, state.cityEndX - state.cityStartX, state.cityEndY - state.cityStartY);
     pop();
 }
-function findMyHero(socketId) {
-    for (let i = 0; i < state.players.length; i++) {
-        if (state.players[i].id == socketId) {
-            myHero = state.players[i];
+function miniMap() {
+    push();
+    fill(255, 255, 255, 150);
+    translate(miniMapMargin, height - miniMapHeight - miniMapMargin);
+    let factor = state.height / miniMapHeight;
+    let miniMapWidth = state.width / factor;
+    let miniX = myHero.globalX / factor;
+    let miniY = myHero.globalY / factor;
+    rect(0, 0, miniMapWidth, miniMapHeight);
+    noFill();
+    rect(state.cityStartX / factor, state.cityStartY / factor, state.city.width / factor, state.city.height / factor);
+    translate(miniX, miniY);
+    rotate(myHero.angle);
+    fill(0, 0, 0);
+    triangle(-6, 4, -6, -4, 6, 0);
+    pop();
+}
+function writeMouseCoordinates() {
+    push();
+    textSize(20);
+    fill(255, 255, 255);
+    text(mouseX + ' : ' + mouseY, mouseX - 100, mouseY + 20);
+    pop();
+}
+function updateCoordinates() {
+    localMapX = localX - myHero.globalX;
+    localMapY = localY - myHero.globalY;
+}
+function drawGrid() {
+    push();
+    strokeWeight(1);
+    stroke(127, 63, 120);
+    for (let i = -myHero.globalX % 100; i < state.width; i += 100) {
+        line(i, 0, i, state.height);
+    }
+    for (let j = -myHero.globalY % 100; j < state.height; j += 100) {
+        line(0, j, state.width, j);
+    }
+    pop();
+}
+function drawLimits() {
+    push();
+    noFill();
+    stroke(222, 222, 222);
+    rect(localMapX, localMapY, state.width, state.height);
+    pop();
+}
+function drawShops() {
+    drawWarehouseShop();
+    drawJewelryShop();
+    if (myHero.jewelryShopOpened) {
+        drawJewelry();
+    } else if (myHero.warehouseOpened) {
+        drawWarehouse();
+    }
+}
+function drawUI() {
+    push();
+    translate(statusBarMargin, statusBarMargin);
+    statusBar();
+    //buffBar();
+    //skillBar();
+    //menuBar();
+    //miniMap();
+    pop();
+}
+// MOUSE & KEYPRESS
+function mouseMoved() {
+    determineMouseAngle();
+    if (state.city) {
+        mouseHover();
+    }
+}
+function mouseHover() {
+    let localWarehouseCenterX = localMapX + state.cityStartX + state.city.warehouse.globalX;
+    let localWarehouseCenterY = localMapY + state.cityStartY + state.city.warehouse.globalY;
+    let localJewelryShopCenterX = localMapX + state.cityStartX + state.city.jewelryShop.globalX;
+    let localJewelryShopCenterY = localMapY + state.cityStartY + state.city.jewelryShop.globalY;
+    if (itemPickedStatus) {
+        noCursor();
+    } else {
+        if (dist(mouseX, mouseY, localWarehouseCenterX, localWarehouseCenterY) < state.city.warehouse.side / 2 ||
+            dist(mouseX, mouseY, localJewelryShopCenterX, localJewelryShopCenterY) < state.city.jewelryShop.side / 2) {
+            cursor('help');
+        } else {
+            cursor('auto');
         }
     }
 }
-function movePlayer() {
-    //changes.leftClick = true; // check if left click is even needed ???
-    let newMouseX = myHero.globalX - localX + mouseX;
-    let newMouseY = myHero.globalY - localY + mouseY;
-    let mouseCoords = {
-        newMouseX,
-        newMouseY
-    }
-    socket.emit('directing', mouseCoords);
-    // make a new socket emit later for moving only
+function mouseDragged() {
+    determineMouseAngle();
 }
-function dropPickedItem() {
-    socket.emit('dropPickedItem');
-    itemPickedStatus = false;
-}
-function checkState() {
-    socket.emit('updating');
-    socket.on('refreshState', function (refreshedState) {
-        state = refreshedState;
-    });
-    // left click of a mouse and hold to move the player non stop
-    if (!inventoryStatus && !myHero.warehouseOpened && !myHero.jewelryShopOpened) {
-        if (mouseIsPressed && mouseButton == LEFT && mouseX > 0 && mouseX < width && mouseY > 0 && mouseY < height) {
-            movePlayer();
+function keyPressed() {
+    if (key.charCodeAt(0) == 32) {
+        socket.emit('pickitup');
+        //addItem();
+    };
+    if (key.charCodeAt(0) == 118) {
+        if (inventoryStatus) {
+            inventoryStatus = false;
+        } else {
+            inventoryStatus = true;
         }
     }
-    // right click of a mouse and hold to use skill every skill refresh seconds
-    if (mouseIsPressed && mouseButton == RIGHT && mouseX > 0 && mouseX < width && mouseY > 0 && mouseY < height) {
-        socket.emit('usingSkill');
-    }
-    if (state.players) {
-        findMyHero(socket.id);
-    }
-    updateCoordinates();
 }
 function mousePressed() {
     if (mouseButton == LEFT && mouseX > 0 && mouseX < width && mouseY > 0 && mouseY < height) {
@@ -734,40 +747,73 @@ function mousePressed() {
         }
     }
 }
-function updateCoordinates() {
-    localMapX = localX - myHero.globalX;
-    localMapY = localY - myHero.globalY;
+function draggingPickedItem() {
+    push();
+    fill(myHero.draggingItem.colorR, myHero.draggingItem.colorG, myHero.draggingItem.colorB);
+    translate(mouseX, mouseY);
+    rect(0, 0, myHero.draggingItem.width * cellSide, myHero.draggingItem.height * cellSide);
+    pop();
 }
-function mouseMoved() {
-    determineMouseAngle();
-    if (state.city) {
-        mouseHover();
+function movePlayer() {
+    //changes.leftClick = true; // check if left click is even needed ???
+    let newMouseX = myHero.globalX - localX + mouseX;
+    let newMouseY = myHero.globalY - localY + mouseY;
+    let mouseCoords = {
+        newMouseX,
+        newMouseY
     }
+    socket.emit('directing', mouseCoords);
+    // make a new socket emit later for moving only
 }
-function mouseHover() {
-    let localWarehouseCenterX = localMapX + state.cityStartX + state.city.warehouse.globalX;
-    let localWarehouseCenterY = localMapY + state.cityStartY + state.city.warehouse.globalY;
-    let localJewelryShopCenterX = localMapX + state.cityStartX + state.city.jewelryShop.globalX;
-    let localJewelryShopCenterY = localMapY + state.cityStartY + state.city.jewelryShop.globalY;
-    if (itemPickedStatus) {
-        noCursor();
-    } else {
-        if (dist(mouseX, mouseY, localWarehouseCenterX, localWarehouseCenterY) < state.city.warehouse.side / 2 ||
-            dist(mouseX, mouseY, localJewelryShopCenterX, localJewelryShopCenterY) < state.city.jewelryShop.side / 2) {
-            cursor('help');
-        } else {
-            cursor('auto');
+function dropPickedItem() {
+    socket.emit('dropPickedItem');
+    itemPickedStatus = false;
+}
+function checkState() {
+    socket.emit('updating');
+    socket.on('refreshState', function (refreshedState) {
+        state = refreshedState;
+    });
+    // left click of a mouse and hold to move the player non stop
+    if (!inventoryStatus && !myHero.warehouseOpened && !myHero.jewelryShopOpened) {
+        if (mouseIsPressed && mouseButton == LEFT && mouseX > 0 && mouseX < width && mouseY > 0 && mouseY < height) {
+            movePlayer();
         }
     }
+    // right click of a mouse and hold to use skill every skill refresh seconds
+    if (mouseIsPressed && mouseButton == RIGHT && mouseX > 0 && mouseX < width && mouseY > 0 && mouseY < height) {
+        socket.emit('usingSkill');
+    }
+    if (state.players) {
+        findMyHero(socket.id);
+    }
+    updateCoordinates();
 }
-function mouseDragged() {
-    determineMouseAngle();
-}
+// DETERMINING SOME VALUES
 function determineMouseAngle() {
     let dx = width / 2 - mouseX;
     let dy = height / 2 - mouseY;
     angle = Math.atan2(-dy, -dx);
     socket.emit('changeAngle', angle);
+}
+function findMyHero(socketId) {
+    for (let i = 0; i < state.players.length; i++) {
+        if (state.players[i].id == socketId) {
+            myHero = state.players[i];
+        }
+    }
+}
+// DRAW HEROES, MONSTERS
+function drawMyHero() {
+    push();
+    fill(255, 255, 255);
+    noStroke();
+    translate(localX, localY);
+    if (myHero.angle) {
+        rotate(myHero.angle);
+    }
+    drawHeroTemplate();
+    pop();
 }
 function drawallHeroes() {
     for (let i = 0; i < state.players.length; i++) {
@@ -784,36 +830,6 @@ function drawallHeroes() {
             pop();
         }
     }
-}
-function drawGrid() {
-    push();
-    strokeWeight(1);
-    stroke(127, 63, 120);
-    for (let i = -myHero.globalX % 100; i < state.width; i += 100) {
-        line(i, 0, i, state.height);
-    }
-    for (let j = -myHero.globalY % 100; j < state.height; j += 100) {
-        line(0, j, state.width, j);
-    }
-    pop();
-}
-function drawLimits() {
-    push();
-    noFill();
-    stroke(222, 222, 222);
-    rect(localMapX, localMapY, state.width, state.height);
-    pop();
-}
-function drawMyHero() {
-    push();
-    fill(255, 255, 255);
-    noStroke();
-    translate(localX, localY);
-    if (myHero.angle) {
-        rotate(myHero.angle);
-    }
-    drawHeroTemplate();
-    pop();
 }
 function drawHeroTemplate() {
     push();
@@ -832,26 +848,19 @@ function drawHeroTemplate() {
     noStroke();
     pop();
 }
-function drawItems() {
-    for (let i = 0; i < state.items.length; i++) {
-        let localItemX = localMapX + state.items[i].globalX;
-        let localItemY = localMapY + state.items[i].globalY;
-        rect(localItemX, localItemY, 20, 20);
+function drawMonsters() {
+    for (let i = 0; i < state.monsters.length; i++) {
+        let localMonsterX = localMapX + state.monsters[i].globalX;
+        let localMonsterY = localMapY + state.monsters[i].globalY;
+        //let monsterMouseAngle = state.players[i].angle;
+        push();
+        fill(255, 0, 0);
+        noStroke();
+        ellipse(localMonsterX, localMonsterY, 50);
+        pop();
     }
 }
-function keyPressed() {
-    if (key.charCodeAt(0) == 32) {
-        socket.emit('pickitup');
-        //addItem();
-    };
-    if (key.charCodeAt(0) == 118) {
-        if (inventoryStatus) {
-            inventoryStatus = false;
-        } else {
-            inventoryStatus = true;
-        }
-    }
-}
+// INVENTORY
 function drawInventory() {
     push();
     stroke(0, 0, 0);
@@ -888,6 +897,13 @@ function drawInventory() {
                 showInventoryHeroInfo();
             }
         }
+    }
+}
+function drawItems() {
+    for (let i = 0; i < state.items.length; i++) {
+        let localItemX = localMapX + state.items[i].globalX;
+        let localItemY = localMapY + state.items[i].globalY;
+        rect(localItemX, localItemY, 20, 20);
     }
 }
 function dressUp() {
@@ -971,6 +987,7 @@ function showInventoryHeroInfo() {
     rect(width - inventoryWidth - inventoryMargin - infoWidth - infoMargin, inventoryHeight + inventoryMargin - infoHeight, infoWidth, infoHeight);
     pop();
 }
+// HOVERING ITEMS
 function hoverItem() {
     if (myHero.leftWeapon && mouseX > inventoryX + leftWeaponX &&
         mouseX < inventoryX + inventoryWidth + leftWeaponX + weaponWidth &&
@@ -1039,4 +1056,17 @@ function showItemInfo(item) {
     fill(0, 0, 0);
     text(item.name, 20, 20);
     pop();
+}
+// DRAW SKILLS
+function drawRoundSkill() {
+    for (let i = 0; i < state.skills.length; i++) {
+        if (state.skills[i].name == 'hellfire') {
+            let localSkillX = localMapX + state.skills[i].globalX;
+            let localSkillY = localMapY + state.skills[i].globalY;
+            push();
+            fill(200, 0, 200);
+            ellipse(localSkillX, localSkillY, state.skills[i].radius * 2);
+            pop();
+        }
+    }
 }

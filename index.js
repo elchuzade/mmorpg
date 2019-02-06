@@ -428,7 +428,7 @@ function getRandomInt(max) {
 
 function createDeviasMap(deviasCity) {
     let name = 'Devias';
-    let width = 2000;
+    let width = 4000;
     let height = 2000;
     let cityStartX = (width - deviasCity.width) / 2;
     let cityStartY = (height - deviasCity.height) / 2;
@@ -713,6 +713,7 @@ function fakeItem() {
     MAP.items.push(gold3);
 }
 
+let connections = [];
 let deviasCity = {};
 let devias = {};
 createDeviasCity();
@@ -807,7 +808,6 @@ function addToPlayerItems(playerIndex, itemIndex) {
 function deleteFromMap(itemIndex) {
     MAP.items.splice(itemIndex, 1);
 }
-let connections = [];
 
 function refreshServerState() {
     if (MAP.players) {
@@ -1167,7 +1167,6 @@ function fitItemShop(playerIndex, fittingItem, column, row) {
     }
     MAP.players[playerIndex].items.push(fittingItem);
 }
-
 // check if an item fits to inventory
 function checkItemFitInventory(playerIndex, item) {
     let inventoryHeight = 10;
