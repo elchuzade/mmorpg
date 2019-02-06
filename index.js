@@ -197,7 +197,7 @@ class Player {
         this.lastSkill = Date.now();
         this.walkSpeed = 10;
         this.level = 1;
-        this.experience = 0 + 150; // temporarily add fake exp
+        this.experience = 0;
         this.maxExperience = getNextExperience(this.level);
         this.blockTimestamp = 0;
         this.blockTimeLimit = 0;
@@ -223,7 +223,6 @@ class Player {
         this.warehouseOpened = false;
         this.jewelryShopOpened = false;
     };
-
     direct(x, y, angle) {
         if (x > mapMargin && x < mapWidth - mapMargin && y > mapMargin && y < mapHeight - mapMargin) {
             let dist = distance(this.globalX, this.globalY, this.destinationX, this.destinationY);
@@ -233,6 +232,17 @@ class Player {
             if (dist > this.radius) {
                 this.walking = true;
             }
+        }
+    }
+    levelUp() {
+        if (this.experience == this.maxExperience) {
+            this.level += 1;
+            this.experience = 0;
+            this.maxExperience = getNextExperience(this.level);
+        } else if (this.experience > this.maxExperience) {
+            this.level += 1;
+            this.experience -= this.maxExperience;
+            this.maxExperience = getNextExperience(this.level);
         }
     }
     move() {
@@ -307,7 +317,7 @@ class Mage extends Player {
             {
                 skillName: 'hellfire',
                 skillDamage: 60,
-                skillMana: 20
+                skillMana: 2
             }
         ];
     }
@@ -357,6 +367,7 @@ class RoundSkill extends Skill {
                 if (MAP.monsters[i].health <= 0) {
                     let ii = findPlayerIndex(this.attackerId);
                     MAP.players[ii].experience += MAP.monsters[i].experience;
+                    MAP.players[ii].levelUp();
                     findAndDestroy(MAP.monsters[i].id, 'monster');
                 }
             }
@@ -381,14 +392,12 @@ function findAndDestroy(id, thing) {
     if (thing == 'skill') {
         for (let i = 0; i < MAP.skills.length; i++) {
             if (MAP.skills[i].timestamp == id) {
-                console.log('found a skill');
                 MAP.skills.splice(i, 1);
             }
         }
     } else if (thing == 'monster') {
         for (let i = 0; i < MAP.monsters.length; i++) {
             if (MAP.monsters[i].id == id) {
-                console.log('found a monster');
                 MAP.monsters.splice(i, 1);
             }
         }
@@ -808,7 +817,6 @@ function addToPlayerItems(playerIndex, itemIndex) {
 function deleteFromMap(itemIndex) {
     MAP.items.splice(itemIndex, 1);
 }
-
 function refreshServerState() {
     if (MAP.players) {
         for (let i = 0; i < MAP.players.length; i++) {
@@ -1191,8 +1199,6 @@ function checkItemFitInventory(playerIndex, item) {
         }
     }
 }
-
-
 
 function moveAllSkills() {
     for (let i = 0; i < MAP.skills.length; i++) {
