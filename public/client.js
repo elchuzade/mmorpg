@@ -105,6 +105,8 @@ function draw() {
         drawShops();
         if (state.skills) {
             drawRoundSkill(); // draw all skills will be in future
+            drawBeamSkill();
+            drawLightningSkill();
         }
         drawMonsters();
         drawUI();
@@ -122,6 +124,9 @@ function draw() {
     }
     checkState();
     writeMouseCoordinates();
+}
+function getRandomInt(max) {
+    return Math.floor(Math.random() * Math.floor(max + 1));
 }
 // WAREHOUSE
 function drawWarehouse() {
@@ -324,7 +329,9 @@ function miniMap() {
     noFill();
     rect(state.cityStartX / factor, state.cityStartY / factor, state.city.width / factor, state.city.height / factor);
     translate(miniX, miniY);
-    rotate(myHero.angle);
+    if (myHero.angle) {
+        rotate(myHero.angle);
+    }
     fill(0, 0, 0);
     triangle(-6, 4, -6, -4, 6, 0);
     pop();
@@ -1066,6 +1073,55 @@ function drawRoundSkill() {
             push();
             fill(200, 0, 200);
             ellipse(localSkillX, localSkillY, state.skills[i].radius * 2);
+            pop();
+        }
+    }
+}
+function drawBeamSkill() {
+    for (let i = 0; i < state.skills.length; i++) {
+        //let skill = state.skills[i];
+        if (state.skills[i].name == 'beam') {
+            let localSkillX = localMapX + skill.globalX;
+            let localSkillY = localMapY + skill.globalY;
+            let localSkillEndX = localMapX + skill.endX;
+            let localSkillEndY = localMapY + skill.endY;
+            // let localSkillEndX = localSkillX + skill.length * Math.cos(skill.angle);
+            // let localSkillEndY = localSkillY + skill.length * Math.sin(skill.angle);
+            push();
+            strokeWeight(4);
+            stroke(200, 0, 200);
+            line(localSkillX, localSkillY, localSkillEndX, localSkillEndY);
+            pop();
+        }
+    }
+}
+function drawLightningSkill() {
+    for (let i = 0; i < state.skills.length; i++) {
+        if (state.skills[i].name == 'lightning') {
+            push();
+            strokeWeight(3);
+            stroke(0, 255, 255);
+            fill(0, 255, 255);
+            let distance = state.skills[i].distance; // constant at which the player can shoot
+            let stepAmount = Math.floor(distance / 50);
+            let stepDistance = distance / stepAmount;
+            applyMatrix(1, 0, 0, 1, localX, localY);
+            rotate(state.skills[i].angle);
+            let cumulativeDistance = 0;
+            let lightningStartY = 0;
+            let lightningEndY = 0;
+            for (let i = 0; i < stepAmount; i++) {
+                lightningEndY = getRandomInt(60) - 30;
+                if (i == 0) {
+                    lightningStartY = 0;
+                } else if (i == 7) {
+                    lightningEndY = 0;
+                }
+                line(cumulativeDistance, lightningStartY, cumulativeDistance + stepDistance, lightningEndY);
+                cumulativeDistance += stepDistance;
+                lightningStartY = lightningEndY;
+            }
+            resetMatrix();
             pop();
         }
     }

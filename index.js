@@ -98,6 +98,7 @@ class Monster {
         this.direction = null;
         this.walking = false;
         this.lastAttack = Date.now();
+        this.radius = 25; // area a monster takes to allows a player to hit not just the center of the monster
     }
     direct(x, y) {
         if (distance(this.globalX, this.globalY, x, y) < this.giveupRadius || distance(this.globalX, this.globalY, x, y) > this.attackDistance) {
@@ -303,21 +304,31 @@ class Mage extends Player {
         this.damage = 53;
         this.attackSpeed = 1000;
         this.activeSkill = {
-            skillName: 'hellfire',
-            skillDamage: 60,
-            skillMana: 30
+            skillName: 'lightning',
+            skillDamage: 20,
+            skillMana: 10,
         };
         this.learnedSkills = [
             {
                 skillName: 'fireBall',
-                skillDamage: 44,
+                skillDamage: 50,
                 skillMana: 10,
                 skillSpeed: 12
             },
             {
                 skillName: 'hellfire',
-                skillDamage: 60,
+                skillDamage: 40,
                 skillMana: 2
+            },
+            {
+                skillName: 'beam',
+                skillDamage: 30,
+                skillMana: 15,
+            },
+            {
+                skillName: 'lightning',
+                skillDamage: 20,
+                skillMana: 5,
             }
         ];
     }
@@ -375,6 +386,61 @@ class RoundSkill extends Skill {
     }
     move() {
         if (Date.now() >= 500 + this.timestamp) {
+            this.destroy();
+        }
+    }
+    destroy() {
+        findAndDestroy(this.timestamp, 'skill');
+    }
+}
+
+class BeamSkill extends Skill {
+    constructor(globalX, globalY, name, damage, attackerId, lastSkill, angle, length, repeatAttack) {
+        super(globalX, globalY, name, damage, attackerId, lastSkill);
+        this.repeatAttack = repeatAttack;
+        this.angle = angle;
+        this.length = length;
+        this.endX = globalX + Math.cos(angle) * length;
+        this.endY = globalY + Math.sin(angle) * length;
+        this.distance = distance(globalX, globalY, this.endX, this.endY);
+        this.timestamp = Date.now();
+        this.repeatAttackTimestamp = Date.now();
+    }
+    attack() {
+        let ii = findPlayerIndex(this.attackerId);
+        for (let i = 0; i < MAP.monsters.length; i++) {
+            if (distance(MAP.monsters[i].globalX, MAP.monsters[i].globalY, this.globalX, this.globalY) < this.length) {
+                // tetta is angle between X axis and skill start point and monster coords
+                let tetta = findAngle(this.globalX, this.globalY, MAP.monsters[i].globalX, MAP.monsters[i].globalY);
+                // alfa is angle between skill beam and monster to skill start point (tetta)
+                let alfa = this.angle - tetta;
+                // beamTouch is a distance between beeam line and a line of monster x & y to beam shooter x & y
+                //console.log(this.angle, tetta);
+                let beamTouch = distance(MAP.monsters[i].globalX, MAP.monsters[i].globalY, this.globalX, this.globalY) * Math.sin(alfa);
+                if (alfa > - Math.PI / 2 && alfa < Math.PI / 2) {
+                    if (Math.abs(beamTouch) < MAP.monsters[i].radius) {
+                        MAP.monsters[i].health -= this.damage;
+                        if (MAP.monsters[i].health <= 0) {
+                            MAP.players[ii].experience += MAP.monsters[i].experience;
+                            MAP.players[ii].levelUp();
+                            findAndDestroy(MAP.monsters[i].id, 'monster');
+                        }
+                    }
+                }
+            }
+        }
+    }
+    move() {
+        let i = findPlayerIndex(this.attackerId);
+        this.globalX = MAP.players[i].globalX;
+        this.globalY = MAP.players[i].globalY;
+        this.angle = MAP.players[i].angle;
+        this.endX = this.globalX + Math.cos(this.angle) * this.length;
+        this.endY = this.globalY + Math.sin(this.angle) * this.length;
+        if (Date.now() > this.repeatAttackTimestamp + this.repeatAttack) {
+            this.attack();
+        }
+        if (Date.now() >= 20000 + this.timestamp) {
             this.destroy();
         }
     }
@@ -800,12 +866,26 @@ function useSkill(socketId) {
     let i = findPlayerIndex(socketId);
     if (MAP.players[i].globalX < MAP.cityStartX || MAP.players[i] > MAP.cityEndX || MAP.players[i].globalY < MAP.cityStartY || MAP.players[i].globalY > MAP.cityEndY) {
         if (MAP.players[i].mana >= MAP.players[i].activeSkill.skillMana && MAP.players[i].lastSkill < Date.now() - MAP.players[i].attackSpeed) {
-            let newSkillRadius = 100; // different for different skills each skill will have its own class that extends normal skill class
-            let newSkill = new RoundSkill(MAP.players[i].globalX, MAP.players[i].globalY, MAP.players[i].activeSkill.skillName, MAP.players[i].activeSkill.skillDamage, socketId, Date.now(), newSkillRadius);
-            MAP.players[i].blockTimestamp = Date.now();
-            MAP.players[i].blockTimeLimit = 500; // different for different skills each skill will have its own class that extends normal skill class
-            newSkill.attack();
-            MAP.skills.push(newSkill);
+            if (MAP.players[i].activeSkill.skillName == 'hellfire') {
+                let newSkillRadius = 100; // different for different skills each skill will have its own class that extends normal skill class
+                let newSkill = new RoundSkill(MAP.players[i].globalX, MAP.players[i].globalY, MAP.players[i].activeSkill.skillName, MAP.players[i].activeSkill.skillDamage, socketId, Date.now(), newSkillRadius);
+                newSkill.attack();
+                MAP.skills.push(newSkill);
+                MAP.players[i].blockTimestamp = Date.now();
+                MAP.players[i].blockTimeLimit = 500; // different for different skills each skill will have its own class that extends normal skill class
+            } else if (MAP.players[i].activeSkill.skillName == 'beam') {
+                let newSkillDistance = 300; // different for different skills each skill will have its own class that extends normal skill class
+                let repeatAttack = 1000;
+                let newSkill = new BeamSkill(MAP.players[i].globalX, MAP.players[i].globalY, MAP.players[i].activeSkill.skillName, MAP.players[i].activeSkill.skillDamage, socketId, Date.now(), MAP.players[i].angle, newSkillDistance, repeatAttack);
+                newSkill.attack();
+                MAP.skills.push(newSkill);
+            } else if (MAP.players[i].activeSkill.skillName == 'lightning') {
+                let newSkillDistance = 300; // different for different skills each skill will have its own class that extends normal skill class
+                let repeatAttack = 500;
+                let newSkill = new BeamSkill(MAP.players[i].globalX, MAP.players[i].globalY, MAP.players[i].activeSkill.skillName, MAP.players[i].activeSkill.skillDamage, socketId, Date.now(), MAP.players[i].angle, newSkillDistance, repeatAttack);
+                newSkill.attack();
+                MAP.skills.push(newSkill);
+            }
             MAP.players[i].mana -= MAP.players[i].activeSkill.skillMana;
             MAP.players[i].lastSkill = Date.now();
         }
@@ -962,7 +1042,7 @@ function changeRightRing(socketId) {
     MAP.players[i].rightRing = newRight;
     MAP.players[i].draggingItem = oldRight;
 }
-
+//
 function moveAllPlayers() {
     for (let i = 0; i < MAP.players.length; i++) {
         MAP.players[i].move();
@@ -973,7 +1053,6 @@ function moveAllPlayers() {
         }
         if (MAP.players[i].jewelryShopOpened) {
             if (distance(MAP.players[i].globalX, MAP.players[i].globalY, MAP.cityStartX + MAP.city.jewelryShop.globalX, MAP.cityStartY + MAP.city.jewelryShop.globalY) > MAP.city.jewelryShop.activeRadius) {
-                console.log('closing');
                 MAP.players[i].jewelryShopOpened = false;
             }
         }
