@@ -1,6 +1,8 @@
 document.oncontextmenu = function () { return false; }
 var socket = io.connect('http://localhost:4000');
 
+let width = 1200;
+let height = 660;
 let state = {};
 let changes = {};
 let angle = 0;
@@ -73,9 +75,8 @@ let warehouseGridY = warehouseMargin + statusBarMargin + statusBarHeight;
 let gridWarehousedWidth = 300; // to be fixed later
 let gridWarehouseHeight = 480; // to be fixed later
 
-
 function setup() {
-    createCanvas(1000, 680);
+    createCanvas(1200, 660);
     inventoryX = width - inventoryMargin - inventoryWidth; // because it depends on width have to make it after setup is run
     socket.emit('joined', {
         nickname: 'Kurush',
@@ -110,6 +111,7 @@ function draw() {
         }
         drawMonsters();
         drawUI();
+        drawTrade();
         if (inventoryStatus) {
             drawInventory();
         }
@@ -124,6 +126,42 @@ function draw() {
     }
     checkState();
     writeMouseCoordinates();
+}
+
+let tradeGridW = cellSide * 8;
+let tradeGridH = cellSide * 6;
+let tradeGridMargin = cellSide;
+let tradeGoldBarMargin = cellSide / 2;
+let tradeGoldBarH = cellSide;
+let tradeGoldBarW = cellSide * 4;
+let tradeBtnH = cellSide;
+let tradeBtnW = cellSide * 2;
+let tradeW = tradeGridW * 2 + tradeGridMargin;
+let tradeH = tradeGridH + tradeGoldBarH + tradeGoldBarMargin * 2;
+let tradeX = width / 2 - tradeW / 2;
+let tradeMargin = 50; // this value will be calculated according to the height of the bottom center bar for active skills
+let tradeY = height - tradeMargin - tradeH;
+let tradeGoldBarLeftX = tradeX + tradeGoldBarMargin;
+let tradeGoldBarRightX = tradeX + tradeW - tradeGoldBarMargin - tradeGoldBarW;
+let tradeGoldBarY = tradeY + tradeGridH + tradeGoldBarMargin;
+let tradeBtnY = tradeGoldBarY;
+let tradeGoldBtnX = tradeX + tradeGoldBarMargin * 2 + tradeGoldBarW;
+let tradeCancelBtnX = tradeGoldBtnX + tradeBtnW + tradeGoldBarMargin;
+let tradeAcceptBtnX = tradeCancelBtnX + tradeBtnW + tradeGoldBarMargin;
+
+function drawTrade() { // fix all the colors later
+    push();
+    rect(tradeX, tradeY, tradeW, tradeH);
+    stroke(150, 150, 150);
+    fill(150, 150, 150);
+    grid(tradeX, tradeY, tradeX + tradeGridW, tradeY + tradeGridH, cellSide);
+    grid(tradeX + tradeGridW + tradeGridMargin, tradeY, tradeX + 2 * tradeGridW + tradeGridMargin, tradeY + tradeGridH, cellSide);
+    rect(tradeGoldBarLeftX, tradeGoldBarY, tradeGoldBarW, tradeGoldBarH);
+    rect(tradeGoldBarRightX, tradeGoldBarY, tradeGoldBarW, tradeGoldBarH);
+    rect(tradeGoldBtnX, tradeBtnY, tradeBtnW, tradeBtnH);
+    rect(tradeCancelBtnX, tradeBtnY, tradeBtnW, tradeBtnH);
+    rect(tradeAcceptBtnX, tradeBtnY, tradeBtnW, tradeBtnH);
+    pop();
 }
 function getRandomInt(max) {
     return Math.floor(Math.random() * Math.floor(max + 1));
@@ -981,10 +1019,10 @@ function addGoldNumber() {
     pop();
 }
 function grid(startX, startY, endX, endY, cellSide) {
-    for (let i = 0; i < Math.floor((endX - startX) / cellSide); i++) {
+    for (let i = 0; i <= Math.floor((endX - startX) / cellSide); i++) {
         line(startX + cellSide * i, startY, startX + cellSide * i, endY);
     }
-    for (let j = 0; j < Math.floor((endY - startY) / cellSide); j++) {
+    for (let j = 0; j <= Math.floor((endY - startY) / cellSide); j++) {
         line(startX, startY + cellSide * j, endX, startY + cellSide * j);
     }
 }

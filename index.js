@@ -223,6 +223,20 @@ class Player {
         ];
         this.warehouseOpened = false;
         this.jewelryShopOpened = false;
+        this.trade = {
+            items: [],
+            with: '',
+            status: true,
+            radius: 500,
+            window: [
+                [0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0]
+            ]
+        };
     };
     direct(x, y, angle) {
         if (x > mapMargin && x < mapWidth - mapMargin && y > mapMargin && y < mapHeight - mapMargin) {
@@ -1278,7 +1292,6 @@ function checkItemFitInventory(playerIndex, item) {
         }
     }
 }
-
 function moveAllSkills() {
     for (let i = 0; i < MAP.skills.length; i++) {
         MAP.skills[i].move();
@@ -1326,7 +1339,6 @@ io.sockets.on('connection', function (socket) {
         let i = findPlayerIndex(socket.id)
         MAP.players.splice(i, 1);
     });
-
     socket.on('joined', function (data) {
         let nickname = data.nickname;
         let race = data.race;
