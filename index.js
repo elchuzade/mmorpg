@@ -223,10 +223,10 @@ class Player {
         ];
         this.warehouseOpened = false;
         this.jewelryShopOpened = false;
+        this.tradeStatus = true;
         this.trade = {
             items: [],
             with: '',
-            status: true,
             radius: 500,
             window: [
                 [0, 0, 0, 0, 0, 0, 0, 0],
@@ -1464,4 +1464,14 @@ io.sockets.on('connection', function (socket) {
     socket.on('openJewelryShop', function () {
         openJewelryShop(socket.id);
     });
+    // trade actions
+    socket.on('tradeCancel', function () {
+        cancelTrade(socket.id);
+    });
 });
+
+function cancelTrade(socketId) {
+    let i = findPlayerIndex(socketId);
+    MAP.players[i].tradeStatus = false;
+    console.log('cancelling');
+}

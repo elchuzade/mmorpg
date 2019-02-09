@@ -1,6 +1,8 @@
 document.oncontextmenu = function () { return false; }
 var socket = io.connect('http://localhost:4000');
 
+let foundMyHero = false;
+
 let width = 1200;
 let height = 660;
 let state = {};
@@ -90,7 +92,7 @@ function setup() {
     if (state.players) {
         findMyHero(socket.id);
         updateCoordinates();
-    }
+    };
     gridX = width - inventoryMargin - inventoryWidth;
     gridY = inventoryMargin + wearablesHeight;
     socket.emit('changeAngle', angle);
@@ -109,9 +111,13 @@ function draw() {
             drawBeamSkill();
             drawLightningSkill();
         }
+        if (foundMyHero) {
+            if (myHero.tradeStatus) {
+                drawTrade();
+            }
+        }
         drawMonsters();
         drawUI();
-        drawTrade();
         if (inventoryStatus) {
             drawInventory();
         }
@@ -151,8 +157,9 @@ let tradeAcceptBtnX = tradeCancelBtnX + tradeBtnW + tradeGoldBarMargin;
 
 function drawTrade() { // fix all the colors later
     push();
+    fill(200, 200, 200);
     rect(tradeX, tradeY, tradeW, tradeH);
-    stroke(150, 150, 150);
+    stroke(10, 10, 10);
     fill(150, 150, 150);
     grid(tradeX, tradeY, tradeX + tradeGridW, tradeY + tradeGridH, cellSide);
     grid(tradeX + tradeGridW + tradeGridMargin, tradeY, tradeX + 2 * tradeGridW + tradeGridMargin, tradeY + tradeGridH, cellSide);
@@ -521,13 +528,12 @@ function mousePressed() {
                 } else {
                     // clicking on a warehouse area with no item picked and warehouse closed
                     // just walk
+                    console.log('1');
                     movePlayer();
                 }
             }
-        } else if (mouseX > width - inventoryWidth - inventoryMargin &&
-            mouseX < width - inventoryMargin &&
-            mouseY > inventoryMargin &&
-            mouseY < inventoryMargin + inventoryHeight) {
+        } else if (mouseX > width - inventoryWidth - inventoryMargin && mouseX < width - inventoryMargin &&
+            mouseY > inventoryMargin && mouseY < inventoryMargin + inventoryHeight) {
             // clicking on the inventory area
             if (inventoryStatus) {
                 // clicking on the inventory area with inventory opened
@@ -757,6 +763,31 @@ function mousePressed() {
                 // clicking on the inventory area with inventory closed
                 // just walk
                 movePlayer();
+                console.log('2');
+            }
+        } else if (mouseX > tradeX && mouseX < tradeX + tradeW &&
+            mouseY > tradeY && mouseY < tradeY + tradeH) {
+            // clicking somewhere in the trade window area
+            if (myHero.tradeStatus) {
+                if (mouseX > tradeX && mouseX < tradeX + tradeGridW &&
+                    mouseY > tradeY && mouseY < tradeY + tradeGridH) {
+                    // clicking on your grid inside tradewindow while trading
+                } else if (mouseX > tradeGoldBtnX && mouseX < tradeGoldBtnX + tradeBtnW &&
+                    mouseY > tradeBtnY && mouseY < tradeBtnY + tradeBtnH) {
+                    // clicking on the gold button to add some amount of gold to trade
+                } else if (mouseX > tradeCancelBtnX && mouseX < tradeCancelBtnX + tradeBtnW &&
+                    mouseY > tradeBtnY && mouseY < tradeBtnY + tradeBtnH) {
+                    // clicking on the cancel button
+                    socket.emit('tradeCancel');
+                } else if (mouseX > tradeAcceptBtnX && mouseX < tradeAcceptBtnX + tradeBtnW &&
+                    mouseY > tradeBtnY && mouseY < tradeBtnY + tradeBtnH) {
+                    // clicking on the accept button
+                }
+                // clicking on the area of the trade window while the player is trading
+            } else {
+                // clicking on the area of the trade window while the player is not trading so just walk
+                movePlayer();
+                console.log('3');
             }
         } else {
             // clicking outside of an inventory area
@@ -767,6 +798,7 @@ function mousePressed() {
                 // clicking outside of an inventory area with no item picked
                 // just walk
                 movePlayer();
+                console.log('4');
             }
         }
     } else if (mouseButton == RIGHT && mouseX > 0 && mouseX < width && mouseY > 0 && mouseY < height) {
@@ -778,12 +810,14 @@ function mousePressed() {
         if (dist(mouseX, mouseY, localWarehouseCenterX, localWarehouseCenterY) < state.city.warehouse.side / 2) {
             if (dist(localX, localY, localWarehouseCenterX, localWarehouseCenterY) > state.city.warehouse.activeRadius) {
                 movePlayer();
+                console.log('5');
             } else {
                 socket.emit('openWarehouse');
             }
         } else if (dist(mouseX, mouseY, localJewelryShopCenterX, localJewelryShopCenterY) < state.city.jewelryShop.side / 2) {
             if (dist(localX, localY, localJewelryShopCenterX, localJewelryShopCenterY) > state.city.jewelryShop.activeRadius) {
                 movePlayer();
+                console.log('6');
             } else {
                 socket.emit('openJewelryShop');
             }
@@ -820,9 +854,10 @@ function checkState() {
         state = refreshedState;
     });
     // left click of a mouse and hold to move the player non stop
-    if (!inventoryStatus && !myHero.warehouseOpened && !myHero.jewelryShopOpened) {
+    if (!inventoryStatus && !myHero.warehouseOpened && !myHero.jewelryShopOpened && !myHero.tradeStatus) {
         if (mouseIsPressed && mouseButton == LEFT && mouseX > 0 && mouseX < width && mouseY > 0 && mouseY < height) {
             movePlayer();
+            console.log('8');
         }
     }
     // right click of a mouse and hold to use skill every skill refresh seconds
@@ -845,6 +880,7 @@ function findMyHero(socketId) {
     for (let i = 0; i < state.players.length; i++) {
         if (state.players[i].id == socketId) {
             myHero = state.players[i];
+            foundMyHero = true;
         }
     }
 }
