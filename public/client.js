@@ -2,6 +2,8 @@ document.oncontextmenu = function () { return false; }
 var socket = io.connect('http://localhost:4000');
 
 let foundMyHero = false;
+let calculator = true;
+let calcOutput = 0;
 
 let width = 1200;
 let height = 660;
@@ -130,8 +132,69 @@ function draw() {
     if (itemPickedStatus && myHero.draggingItem) {
         draggingPickedItem();
     }
+    if (calculator) {
+        drawCalc();
+    }
     checkState();
     writeMouseCoordinates();
+}
+
+let calcW = cellSide * 4;
+let calcH = cellSide * 5;
+let calcX = width / 2 - calcW / 2;
+let calcY = height / 2 - calcH;
+
+function drawCalc() {
+    push();
+    stroke(10, 10, 10);
+    fill(200, 200, 200);
+    rect(calcX, calcY, calcW, calcH);
+    noFill();
+    grid(calcX, calcY, calcX + calcW, calcY + calcH, cellSide);
+    fill(200, 200, 200);
+    rect(calcX, calcY, calcW, cellSide);
+    rect(calcX + cellSide, calcY + cellSide * 4, cellSide * 2, cellSide);
+    fill(10, 10, 10);
+    addText();
+    pop();
+}
+function addCalcDigit(digit) {
+    if (Math.floor(calcOutput / 100000000) == 0) {
+        calcOutput = calcOutput * 10 + digit;
+    }
+}
+function resetCalcValue() {
+    calcOutput = 0;
+}
+function removeCalcDigit() {
+    calcOutput = Math.floor(calcOutput / 10);
+}
+function cancelCalcValue() {
+    calculator = false;
+}
+function addText() {
+    textSize(20);
+    // first row
+    text('1', calcX + 10, calcY + cellSide + 23);
+    text('2', calcX + 10 + cellSide, calcY + cellSide + 23);
+    text('3', calcX + 10 + cellSide * 2, calcY + cellSide + 23);
+    text('C', calcX + 8 + cellSide * 3, calcY + cellSide + 23);
+    // second row
+    text('4', calcX + 10, calcY + cellSide * 2 + 23);
+    text('5', calcX + 10 + cellSide, calcY + cellSide * 2 + 23);
+    text('6', calcX + 10 + cellSide * 2, calcY + cellSide * 2 + 23);
+    text('<', calcX + 10 + cellSide * 3, calcY + cellSide * 2 + 23);
+    // third row
+    text('7', calcX + 10, calcY + cellSide * 3 + 23);
+    text('8', calcX + 10 + cellSide, calcY + cellSide * 3 + 23);
+    text('9', calcX + 10 + cellSide * 2, calcY + cellSide * 3 + 23);
+    text('V', calcX + 8 + cellSide * 3, calcY + cellSide * 3 + 23);
+    // fourth row
+    text('0', calcX + 10, calcY + cellSide * 4 + 23);
+    text('ALL', calcX + 12 + cellSide, calcY + cellSide * 4 + 23);
+    text('X', calcX + 8 + cellSide * 3, calcY + cellSide * 4 + 23);
+    // value
+    text(calcOutput, calcX + 10, calcY + 23);
 }
 
 let tradeGridW = cellSide * 8;
@@ -471,334 +534,405 @@ function keyPressed() {
 }
 function mousePressed() {
     if (mouseButton == LEFT && mouseX > 0 && mouseX < width && mouseY > 0 && mouseY < height) {
-        if (mouseX > warehouseGridX && mouseX < warehouseGridX + warehouseWidth &&
-            mouseY > warehouseGridY && mouseY < warehouseGridY + warehouseHeight) {
-            // clicking inside the warehouse area
-            if (myHero.warehouseOpened) {
-                // clicking in warehouse while the warehouse is ooened
-                if (itemPickedStatus) {
-                    // clicking on a warehouse area having an item picked
-                    let mouseCoords = {
-                        x: Math.floor((mouseX - warehouseGridX) / cellSide),
-                        y: Math.floor((mouseY - warehouseGridY) / cellSide)
-                    };
-                    socket.emit('placingItemWarehouse', mouseCoords);
-                    socket.on('replacingItemWarehouseResult', function (result) {
-                        if (result) {
-                            pickedItem = {};
-                            itemPickedStatus = false;
-                        }
-                    });
-                } else {
-                    // no item is picked and clicking on a warehouse area
-                    for (let i = 0; i < myHero.warehouseItems.length; i++) {
-                        if (mouseX > warehouseGridX + myHero.warehouseItems[i].globalX * cellSide &&
-                            mouseX < warehouseGridX + (myHero.warehouseItems[i].globalX + myHero.warehouseItems[i].width) * cellSide &&
-                            mouseY > warehouseGridY + myHero.warehouseItems[i].globalY * cellSide &&
-                            mouseY < warehouseGridY + (myHero.warehouseItems[i].globalY + myHero.warehouseItems[i].height) * cellSide) {
-                            pickedItem = myHero.warehouseItems[i];
-                            itemPickedStatus = true;
-                            socket.emit('warehousePickItem', pickedItem);
-                        }
-                    }
-                }
-            } else if (myHero.jewelryShopOpened) {
-                // clicking in jewelryshop grid while the jewelryshop is ooened
-                if (itemPickedStatus) {
-                    // clicking on a jewelryshop area having an item picked
-                    socket.emit('sellItem');
-                    pickedItem = {};
-                    itemPickedStatus = false;
-                } else {
-                    // no item is picked and clicking on a jewelryshop area
-                    for (let i = 0; i < state.city.jewelryShop.shopItems.length; i++) {
-                        if (mouseX > warehouseGridX + state.city.jewelryShop.shopItems[i].globalX * cellSide &&
-                            mouseX < warehouseGridX + (state.city.jewelryShop.shopItems[i].globalX + state.city.jewelryShop.shopItems[i].width) * cellSide &&
-                            mouseY > warehouseGridY + state.city.jewelryShop.shopItems[i].globalY * cellSide &&
-                            mouseY < warehouseGridY + (state.city.jewelryShop.shopItems[i].globalY + state.city.jewelryShop.shopItems[i].height) * cellSide) {
-                            socket.emit('buyJewelryItem', i);
-                        }
-                    }
-                }
-            } else {
-                // warehouse grid is closed
-                if (itemPickedStatus) {
-                    // clicking on the area of warehouse when its closed and having item picked
-                    dropPickedItem();
-                } else {
-                    // clicking on a warehouse area with no item picked and warehouse closed
-                    // just walk
-                    console.log('1');
-                    movePlayer();
-                }
+        if (calculator) {
+            // first row
+            if (mouseX > calcX && mouseX < calcX + cellSide &&
+                mouseY > calcY + cellSide && mouseY < calcY + cellSide * 2) {
+                console.log('click 1');
+                addCalcDigit(1);
+            } else if (mouseX > calcX + cellSide && mouseX < calcX + cellSide * 2 &&
+                mouseY > calcY + cellSide && mouseY < calcY + cellSide * 2) {
+                console.log('click 2');
+                addCalcDigit(2);
+            } else if (mouseX > calcX + cellSide * 2 && mouseX < calcX + cellSide * 3 &&
+                mouseY > calcY + cellSide && mouseY < calcY + cellSide * 2) {
+                console.log('click 3');
+                addCalcDigit(3);
+            } else if (mouseX > calcX + cellSide * 3 && mouseX < calcX + cellSide * 4 &&
+                mouseY > calcY + cellSide && mouseY < calcY + cellSide * 2) {
+                console.log('click C');
+                resetCalcValue();
             }
-        } else if (mouseX > width - inventoryWidth - inventoryMargin && mouseX < width - inventoryMargin &&
-            mouseY > inventoryMargin && mouseY < inventoryMargin + inventoryHeight) {
-            // clicking on the inventory area
-            if (inventoryStatus) {
-                // clicking on the inventory area with inventory opened
-                // need to specify where exactly is the mouse click
-                if (mouseX > gridX &&
-                    mouseX < gridX + gridWidth &&
-                    mouseY > gridY &&
-                    mouseY < gridY + gridHeight) {
-                    // clicking inside the grid of an inventory
+            // second row
+            else if (mouseX > calcX && mouseX < calcX + cellSide &&
+                mouseY > calcY + cellSide * 2 && mouseY < calcY + cellSide * 3) {
+                console.log('click 4');
+                addCalcDigit(4);
+            } else if (mouseX > calcX + cellSide && mouseX < calcX + cellSide * 2 &&
+                mouseY > calcY + cellSide * 2 && mouseY < calcY + cellSide * 3) {
+                console.log('click 5');
+                addCalcDigit(5);
+            } else if (mouseX > calcX + cellSide * 2 && mouseX < calcX + cellSide * 3 &&
+                mouseY > calcY + cellSide * 2 && mouseY < calcY + cellSide * 3) {
+                console.log('click 6');
+                addCalcDigit(6);
+            } else if (mouseX > calcX + cellSide * 3 && mouseX < calcX + cellSide * 4 &&
+                mouseY > calcY + cellSide * 2 && mouseY < calcY + cellSide * 3) {
+                console.log('click <-');
+                removeCalcDigit();
+            }
+            // third row
+            else if (mouseX > calcX && mouseX < calcX + cellSide &&
+                mouseY > calcY + cellSide * 3 && mouseY < calcY + cellSide * 4) {
+                console.log('click 7');
+                addCalcDigit(7);
+            } else if (mouseX > calcX + cellSide && mouseX < calcX + cellSide * 2 &&
+                mouseY > calcY + cellSide * 3 && mouseY < calcY + cellSide * 4) {
+                console.log('click 8');
+                addCalcDigit(8);
+            } else if (mouseX > calcX + cellSide * 2 && mouseX < calcX + cellSide * 3 &&
+                mouseY > calcY + cellSide * 3 && mouseY < calcY + cellSide * 4) {
+                console.log('click 9');
+                addCalcDigit(9);
+            } else if (mouseX > calcX + cellSide * 3 && mouseX < calcX + cellSide * 4 &&
+                mouseY > calcY + cellSide * 3 && mouseY < calcY + cellSide * 4) {
+                console.log('click V');
+                sendCalcValue();
+            }
+            // fourth row
+            else if (mouseX > calcX && mouseX < calcX + cellSide &&
+                mouseY > calcY + cellSide * 4 && mouseY < calcY + cellSide * 5) {
+                console.log('click 0');
+                addCalcDigit(0);
+            } else if (mouseX > calcX + cellSide && mouseX < calcX + cellSide * 3 &&
+                mouseY > calcY + cellSide * 4 && mouseY < calcY + cellSide * 5) {
+                console.log('click ALL');
+                allInCalc();
+            } else if (mouseX > calcX + cellSide * 3 && mouseX < calcX + cellSide * 4 &&
+                mouseY > calcY + cellSide * 4 && mouseY < calcY + cellSide * 5) {
+                console.log('click X');
+                cancelCalcValue();
+            }
+        } else {
+            if (mouseX > warehouseGridX && mouseX < warehouseGridX + warehouseWidth &&
+                mouseY > warehouseGridY && mouseY < warehouseGridY + warehouseHeight) {
+                // clicking inside the warehouse area
+                if (myHero.warehouseOpened) {
+                    // clicking in warehouse while the warehouse is ooened
                     if (itemPickedStatus) {
-                        // having item picked and inventory opened clicking on the inventory grid area
-                        // some item is picked and clicking inside a grid inventory so trying to place it
-                        // Update the item's position to a new place in inventory if allowed
+                        // clicking on a warehouse area having an item picked
                         let mouseCoords = {
-                            x: Math.floor((mouseX - gridX) / cellSide),
-                            y: Math.floor((mouseY - gridY) / cellSide)
+                            x: Math.floor((mouseX - warehouseGridX) / cellSide),
+                            y: Math.floor((mouseY - warehouseGridY) / cellSide)
                         };
-                        socket.emit('placingItemInventory', mouseCoords);
-                        socket.on('replacingItemInventoryResult', function (result) {
+                        socket.emit('placingItemWarehouse', mouseCoords);
+                        socket.on('replacingItemWarehouseResult', function (result) {
                             if (result) {
                                 pickedItem = {};
                                 itemPickedStatus = false;
                             }
                         });
                     } else {
-                        // no item is picked and clicking inside inventory grid so trying to grab it
-                        // Pick an item up
-                        for (let i = 0; i < myHero.items.length; i++) {
-                            if (mouseX > gridX + myHero.items[i].globalX * cellSide &&
-                                mouseX < gridX + (myHero.items[i].globalX + myHero.items[i].width) * cellSide &&
-                                mouseY > gridY + myHero.items[i].globalY * cellSide &&
-                                mouseY < gridY + (myHero.items[i].globalY + myHero.items[i].height) * cellSide) {
-                                pickedItem = myHero.items[i];
+                        // no item is picked and clicking on a warehouse area
+                        for (let i = 0; i < myHero.warehouseItems.length; i++) {
+                            if (mouseX > warehouseGridX + myHero.warehouseItems[i].globalX * cellSide &&
+                                mouseX < warehouseGridX + (myHero.warehouseItems[i].globalX + myHero.warehouseItems[i].width) * cellSide &&
+                                mouseY > warehouseGridY + myHero.warehouseItems[i].globalY * cellSide &&
+                                mouseY < warehouseGridY + (myHero.warehouseItems[i].globalY + myHero.warehouseItems[i].height) * cellSide) {
+                                pickedItem = myHero.warehouseItems[i];
                                 itemPickedStatus = true;
-                                socket.emit('inventoryPickItem', pickedItem);
+                                socket.emit('warehousePickItem', pickedItem);
                             }
                         }
                     }
-                }
-                // dealing with a pendant slot in the inventory
-                if (mouseX > width - inventoryMargin - inventoryWidth + pendantX &&
-                    mouseX < width - inventoryMargin - inventoryWidth + pendantX + ringPendantSide &&
-                    mouseY > inventoryMargin + ringPendantY &&
-                    mouseY < inventoryMargin + ringPendantY + ringPendantSide) {
-                    // clicking on a pendant area
+                } else if (myHero.jewelryShopOpened) {
+                    // clicking in jewelryshop grid while the jewelryshop is ooened
                     if (itemPickedStatus) {
-                        // clicking on a pendant area with an item picked
-                        // change the pendant
-                        if (myHero.pendant) {
-                            // change the pendant to a picked item if it is a pendant
-                            socket.emit('changePendant');
-                        } else {
-                            // i dont have a pendant so assign a picked item as a pendant
-                            socket.emit('putOnPendant');
-                            socket.on('putOnPendantResult', function (action) {
-                                if (action) {
-                                    // this way i make sure that the pendant is being placed in a pendant place
+                        // clicking on a jewelryshop area having an item picked
+                        socket.emit('sellItem');
+                        pickedItem = {};
+                        itemPickedStatus = false;
+                    } else {
+                        // no item is picked and clicking on a jewelryshop area
+                        for (let i = 0; i < state.city.jewelryShop.shopItems.length; i++) {
+                            if (mouseX > warehouseGridX + state.city.jewelryShop.shopItems[i].globalX * cellSide &&
+                                mouseX < warehouseGridX + (state.city.jewelryShop.shopItems[i].globalX + state.city.jewelryShop.shopItems[i].width) * cellSide &&
+                                mouseY > warehouseGridY + state.city.jewelryShop.shopItems[i].globalY * cellSide &&
+                                mouseY < warehouseGridY + (state.city.jewelryShop.shopItems[i].globalY + state.city.jewelryShop.shopItems[i].height) * cellSide) {
+                                socket.emit('buyJewelryItem', i);
+                            }
+                        }
+                    }
+                } else {
+                    // warehouse grid is closed
+                    if (itemPickedStatus) {
+                        // clicking on the area of warehouse when its closed and having item picked
+                        dropPickedItem();
+                    } else {
+                        // clicking on a warehouse area with no item picked and warehouse closed
+                        // just walk
+                        console.log('1');
+                        movePlayer();
+                    }
+                }
+            } else if (mouseX > width - inventoryWidth - inventoryMargin && mouseX < width - inventoryMargin &&
+                mouseY > inventoryMargin && mouseY < inventoryMargin + inventoryHeight) {
+                // clicking on the inventory area
+                if (inventoryStatus) {
+                    // clicking on the inventory area with inventory opened
+                    // need to specify where exactly is the mouse click
+                    if (mouseX > gridX &&
+                        mouseX < gridX + gridWidth &&
+                        mouseY > gridY &&
+                        mouseY < gridY + gridHeight) {
+                        // clicking inside the grid of an inventory
+                        if (itemPickedStatus) {
+                            // having item picked and inventory opened clicking on the inventory grid area
+                            // some item is picked and clicking inside a grid inventory so trying to place it
+                            // Update the item's position to a new place in inventory if allowed
+                            let mouseCoords = {
+                                x: Math.floor((mouseX - gridX) / cellSide),
+                                y: Math.floor((mouseY - gridY) / cellSide)
+                            };
+                            socket.emit('placingItemInventory', mouseCoords);
+                            socket.on('replacingItemInventoryResult', function (result) {
+                                if (result) {
+                                    pickedItem = {};
                                     itemPickedStatus = false;
                                 }
                             });
-                        }
-                    } else {
-                        // no item is picked so pick the pendant if exists or do nothing if doesnt exist a pendant
-                        if (myHero.pendant) {
-                            // pick up the pendant from a pendant area of my hero
-                            itemPickedStatus = true;
-                            socket.emit('takeOutPendant');
-                        }
-                    }
-                }
-                // dealing with a wing cape slot in the inventory
-                if (mouseX > width - inventoryMargin - inventoryWidth + wingCapeX &&
-                    mouseX < width - inventoryMargin - inventoryWidth + wingCapeX + wingCapeWidth &&
-                    mouseY > inventoryMargin + wingCapeY &&
-                    mouseY < inventoryMargin + wingCapeY + wingCapeHeight) {
-                    // clicking on a wing cape area
-                    if (itemPickedStatus) {
-                        // clicking on a wing cape area with an item picked
-                        // change the wing cape
-                        if (myHero.wingCape) {
-                            // change the wing cape to a picked item if it is a wing cape
-                            socket.emit('changeWingCape');
                         } else {
-                            // i dont have a wing cape so assign a picked item as a wing cape
-                            socket.emit('putOnWingCape');
-                            socket.on('putOnWingCapeResult', function (action) {
-                                if (action) {
-                                    // this way i make sure that the wing cape is being placed in a wing cape place
-                                    itemPickedStatus = false;
+                            // no item is picked and clicking inside inventory grid so trying to grab it
+                            // Pick an item up
+                            for (let i = 0; i < myHero.items.length; i++) {
+                                if (mouseX > gridX + myHero.items[i].globalX * cellSide &&
+                                    mouseX < gridX + (myHero.items[i].globalX + myHero.items[i].width) * cellSide &&
+                                    mouseY > gridY + myHero.items[i].globalY * cellSide &&
+                                    mouseY < gridY + (myHero.items[i].globalY + myHero.items[i].height) * cellSide) {
+                                    pickedItem = myHero.items[i];
+                                    itemPickedStatus = true;
+                                    socket.emit('inventoryPickItem', pickedItem);
                                 }
-                            });
-                        }
-                    } else {
-                        // no item is picked so pick the wing cape if exists or do nothing if doesnt exist a wing cape
-                        if (myHero.wingCape) {
-                            // pick up the wing cape from a wing cape area of my hero
-                            itemPickedStatus = true;
-                            socket.emit('takeOutWingCape');
+                            }
                         }
                     }
-                }
-                // dealing with a left weapon slot in the inventory
-                if (mouseX > width - inventoryMargin - inventoryWidth + leftWeaponX &&
-                    mouseX < width - inventoryMargin - inventoryWidth + leftWeaponX + weaponWidth &&
-                    mouseY > inventoryMargin + weaponY &&
-                    mouseY < inventoryMargin + weaponY + weaponHeight) {
-                    // clicking on a left weapon area
-                    if (itemPickedStatus) {
-                        // clicking on a left weapon area with an item picked
-                        // change the left weapon
-                        if (myHero.leftWeapon) {
-                            // change the left weapon to a picked item if it is a left weapon
-                            socket.emit('changeLeftWeapon');
+                    // dealing with a pendant slot in the inventory
+                    if (mouseX > width - inventoryMargin - inventoryWidth + pendantX &&
+                        mouseX < width - inventoryMargin - inventoryWidth + pendantX + ringPendantSide &&
+                        mouseY > inventoryMargin + ringPendantY &&
+                        mouseY < inventoryMargin + ringPendantY + ringPendantSide) {
+                        // clicking on a pendant area
+                        if (itemPickedStatus) {
+                            // clicking on a pendant area with an item picked
+                            // change the pendant
+                            if (myHero.pendant) {
+                                // change the pendant to a picked item if it is a pendant
+                                socket.emit('changePendant');
+                            } else {
+                                // i dont have a pendant so assign a picked item as a pendant
+                                socket.emit('putOnPendant');
+                                socket.on('putOnPendantResult', function (action) {
+                                    if (action) {
+                                        // this way i make sure that the pendant is being placed in a pendant place
+                                        itemPickedStatus = false;
+                                    }
+                                });
+                            }
                         } else {
-                            // i dont have a left weapon so assign a picked item as a left weapon
-                            socket.emit('putOnLeftWeapon');
-                            socket.on('putOnLeftWeaponResult', function (action) {
-                                if (action) {
-                                    // this way i make sure that the left weapon is being placed in a left weapon place
-                                    itemPickedStatus = false;
-                                }
-                            });
-                        }
-                    } else {
-                        // no item is picked so pick the left weapon if exists or do nothing if doesnt exist a left weapon
-                        if (myHero.leftWeapon) {
-                            // pick up the left weapon from a left weapon area of my hero
-                            itemPickedStatus = true;
-                            socket.emit('takeOutLeftWeapon');
+                            // no item is picked so pick the pendant if exists or do nothing if doesnt exist a pendant
+                            if (myHero.pendant) {
+                                // pick up the pendant from a pendant area of my hero
+                                itemPickedStatus = true;
+                                socket.emit('takeOutPendant');
+                            }
                         }
                     }
-                }
-                // dealing with a right weapon slot in the inventory
-                if (mouseX > width - inventoryMargin - inventoryWidth + rightWeaponX &&
-                    mouseX < width - inventoryMargin - inventoryWidth + rightWeaponX + weaponWidth &&
-                    mouseY > inventoryMargin + weaponY &&
-                    mouseY < inventoryMargin + weaponY + weaponHeight) {
-                    // clicking on a right weapon area
-                    if (itemPickedStatus) {
-                        // clicking on a right weapon area with an item picked
-                        // change the right weapon
-                        if (myHero.rightWeapon) {
-                            // change the right weapon to a picked item if it is a right weapon
-                            socket.emit('changeRightWeapon');
+                    // dealing with a wing cape slot in the inventory
+                    if (mouseX > width - inventoryMargin - inventoryWidth + wingCapeX &&
+                        mouseX < width - inventoryMargin - inventoryWidth + wingCapeX + wingCapeWidth &&
+                        mouseY > inventoryMargin + wingCapeY &&
+                        mouseY < inventoryMargin + wingCapeY + wingCapeHeight) {
+                        // clicking on a wing cape area
+                        if (itemPickedStatus) {
+                            // clicking on a wing cape area with an item picked
+                            // change the wing cape
+                            if (myHero.wingCape) {
+                                // change the wing cape to a picked item if it is a wing cape
+                                socket.emit('changeWingCape');
+                            } else {
+                                // i dont have a wing cape so assign a picked item as a wing cape
+                                socket.emit('putOnWingCape');
+                                socket.on('putOnWingCapeResult', function (action) {
+                                    if (action) {
+                                        // this way i make sure that the wing cape is being placed in a wing cape place
+                                        itemPickedStatus = false;
+                                    }
+                                });
+                            }
                         } else {
-                            // i dont have a right weapon so assign a picked item as a right weapon
-                            socket.emit('putOnRightWeapon');
-                            socket.on('putOnRightWeaponResult', function (action) {
-                                if (action) {
-                                    // this way i make sure that the right weapon is being placed in a right weapon place
-                                    itemPickedStatus = false;
-                                }
-                            });
-                        }
-                    } else {
-                        // no item is picked so pick the right weapon if exists or do nothing if doesnt exist a right weapon
-                        if (myHero.rightWeapon) {
-                            // pick up the right weapon from a right weapon area of my hero
-                            itemPickedStatus = true;
-                            socket.emit('takeOutRightWeapon');
+                            // no item is picked so pick the wing cape if exists or do nothing if doesnt exist a wing cape
+                            if (myHero.wingCape) {
+                                // pick up the wing cape from a wing cape area of my hero
+                                itemPickedStatus = true;
+                                socket.emit('takeOutWingCape');
+                            }
                         }
                     }
-                }
-                // dealing with a right ring slot in the inventory
-                if (mouseX > width - inventoryMargin - inventoryWidth + leftRingX &&
-                    mouseX < width - inventoryMargin - inventoryWidth + leftRingX + ringPendantSide &&
-                    mouseY > inventoryMargin + ringPendantY &&
-                    mouseY < inventoryMargin + ringPendantY + ringPendantSide) {
-                    // clicking on a left ring area
-                    if (itemPickedStatus) {
-                        // clicking on a left ring area with an item picked
-                        // change the left ring
-                        if (myHero.leftRing) {
-                            // change the left ring to a picked item if it is a left ring
-                            socket.emit('changeLeftRing');
+                    // dealing with a left weapon slot in the inventory
+                    if (mouseX > width - inventoryMargin - inventoryWidth + leftWeaponX &&
+                        mouseX < width - inventoryMargin - inventoryWidth + leftWeaponX + weaponWidth &&
+                        mouseY > inventoryMargin + weaponY &&
+                        mouseY < inventoryMargin + weaponY + weaponHeight) {
+                        // clicking on a left weapon area
+                        if (itemPickedStatus) {
+                            // clicking on a left weapon area with an item picked
+                            // change the left weapon
+                            if (myHero.leftWeapon) {
+                                // change the left weapon to a picked item if it is a left weapon
+                                socket.emit('changeLeftWeapon');
+                            } else {
+                                // i dont have a left weapon so assign a picked item as a left weapon
+                                socket.emit('putOnLeftWeapon');
+                                socket.on('putOnLeftWeaponResult', function (action) {
+                                    if (action) {
+                                        // this way i make sure that the left weapon is being placed in a left weapon place
+                                        itemPickedStatus = false;
+                                    }
+                                });
+                            }
                         } else {
-                            // i dont have a left ring so assign a picked item as a left ring
-                            socket.emit('putOnLeftRing');
-                            socket.on('putOnLeftRingResult', function (action) {
-                                if (action) {
-                                    // this way i make sure that the left ring is being placed in a left ring place
-                                    itemPickedStatus = false;
-                                }
-                            });
-                        }
-                    } else {
-                        // no item is picked so pick the left ring if exists or do nothing if doesnt exist a left ring
-                        if (myHero.leftRing) {
-                            // pick up the left ring from a left ring area of my hero
-                            itemPickedStatus = true;
-                            socket.emit('takeOutLeftRing');
+                            // no item is picked so pick the left weapon if exists or do nothing if doesnt exist a left weapon
+                            if (myHero.leftWeapon) {
+                                // pick up the left weapon from a left weapon area of my hero
+                                itemPickedStatus = true;
+                                socket.emit('takeOutLeftWeapon');
+                            }
                         }
                     }
-                }
-                // dealing with a right ring slot in the inventory
-                if (mouseX > width - inventoryMargin - inventoryWidth + rightRingX &&
-                    mouseX < width - inventoryMargin - inventoryWidth + rightRingX + ringPendantSide &&
-                    mouseY > inventoryMargin + ringPendantY &&
-                    mouseY < inventoryMargin + ringPendantY + ringPendantSide) {
-                    // clicking on a right ring area
-                    if (itemPickedStatus) {
-                        // clicking on a right ring area with an item picked
-                        // change the right ring
-                        if (myHero.rightRing) {
-                            // change the right ring to a picked item if it is a right ring
-                            socket.emit('changeRightRing');
+                    // dealing with a right weapon slot in the inventory
+                    if (mouseX > width - inventoryMargin - inventoryWidth + rightWeaponX &&
+                        mouseX < width - inventoryMargin - inventoryWidth + rightWeaponX + weaponWidth &&
+                        mouseY > inventoryMargin + weaponY &&
+                        mouseY < inventoryMargin + weaponY + weaponHeight) {
+                        // clicking on a right weapon area
+                        if (itemPickedStatus) {
+                            // clicking on a right weapon area with an item picked
+                            // change the right weapon
+                            if (myHero.rightWeapon) {
+                                // change the right weapon to a picked item if it is a right weapon
+                                socket.emit('changeRightWeapon');
+                            } else {
+                                // i dont have a right weapon so assign a picked item as a right weapon
+                                socket.emit('putOnRightWeapon');
+                                socket.on('putOnRightWeaponResult', function (action) {
+                                    if (action) {
+                                        // this way i make sure that the right weapon is being placed in a right weapon place
+                                        itemPickedStatus = false;
+                                    }
+                                });
+                            }
                         } else {
-                            // i dont have a right ring so assign a picked item as a right ring
-                            socket.emit('putOnRightRing');
-                            socket.on('putOnRightRingResult', function (action) {
-                                if (action) {
-                                    // this way i make sure that the right ring is being placed in a right ring place
-                                    itemPickedStatus = false;
-                                }
-                            });
-                        }
-                    } else {
-                        // no item is picked so pick the right ring if exists or do nothing if doesnt exist a right ring
-                        if (myHero.rightRing) {
-                            // pick up the right ring from a right ring area of my hero
-                            itemPickedStatus = true;
-                            socket.emit('takeOutRightRing');
+                            // no item is picked so pick the right weapon if exists or do nothing if doesnt exist a right weapon
+                            if (myHero.rightWeapon) {
+                                // pick up the right weapon from a right weapon area of my hero
+                                itemPickedStatus = true;
+                                socket.emit('takeOutRightWeapon');
+                            }
                         }
                     }
+                    // dealing with a right ring slot in the inventory
+                    if (mouseX > width - inventoryMargin - inventoryWidth + leftRingX &&
+                        mouseX < width - inventoryMargin - inventoryWidth + leftRingX + ringPendantSide &&
+                        mouseY > inventoryMargin + ringPendantY &&
+                        mouseY < inventoryMargin + ringPendantY + ringPendantSide) {
+                        // clicking on a left ring area
+                        if (itemPickedStatus) {
+                            // clicking on a left ring area with an item picked
+                            // change the left ring
+                            if (myHero.leftRing) {
+                                // change the left ring to a picked item if it is a left ring
+                                socket.emit('changeLeftRing');
+                            } else {
+                                // i dont have a left ring so assign a picked item as a left ring
+                                socket.emit('putOnLeftRing');
+                                socket.on('putOnLeftRingResult', function (action) {
+                                    if (action) {
+                                        // this way i make sure that the left ring is being placed in a left ring place
+                                        itemPickedStatus = false;
+                                    }
+                                });
+                            }
+                        } else {
+                            // no item is picked so pick the left ring if exists or do nothing if doesnt exist a left ring
+                            if (myHero.leftRing) {
+                                // pick up the left ring from a left ring area of my hero
+                                itemPickedStatus = true;
+                                socket.emit('takeOutLeftRing');
+                            }
+                        }
+                    }
+                    // dealing with a right ring slot in the inventory
+                    if (mouseX > width - inventoryMargin - inventoryWidth + rightRingX &&
+                        mouseX < width - inventoryMargin - inventoryWidth + rightRingX + ringPendantSide &&
+                        mouseY > inventoryMargin + ringPendantY &&
+                        mouseY < inventoryMargin + ringPendantY + ringPendantSide) {
+                        // clicking on a right ring area
+                        if (itemPickedStatus) {
+                            // clicking on a right ring area with an item picked
+                            // change the right ring
+                            if (myHero.rightRing) {
+                                // change the right ring to a picked item if it is a right ring
+                                socket.emit('changeRightRing');
+                            } else {
+                                // i dont have a right ring so assign a picked item as a right ring
+                                socket.emit('putOnRightRing');
+                                socket.on('putOnRightRingResult', function (action) {
+                                    if (action) {
+                                        // this way i make sure that the right ring is being placed in a right ring place
+                                        itemPickedStatus = false;
+                                    }
+                                });
+                            }
+                        } else {
+                            // no item is picked so pick the right ring if exists or do nothing if doesnt exist a right ring
+                            if (myHero.rightRing) {
+                                // pick up the right ring from a right ring area of my hero
+                                itemPickedStatus = true;
+                                socket.emit('takeOutRightRing');
+                            }
+                        }
+                    }
+                } else {
+                    // clicking on the inventory area with inventory closed
+                    // just walk
+                    movePlayer();
+                    console.log('2');
+                }
+            } else if (mouseX > tradeX && mouseX < tradeX + tradeW &&
+                mouseY > tradeY && mouseY < tradeY + tradeH) {
+                // clicking somewhere in the trade window area
+                if (myHero.tradeStatus) {
+                    if (mouseX > tradeX && mouseX < tradeX + tradeGridW &&
+                        mouseY > tradeY && mouseY < tradeY + tradeGridH) {
+                        // clicking on your grid inside tradewindow while trading
+                    } else if (mouseX > tradeGoldBtnX && mouseX < tradeGoldBtnX + tradeBtnW &&
+                        mouseY > tradeBtnY && mouseY < tradeBtnY + tradeBtnH) {
+                        // clicking on the gold button to add some amount of gold to trade
+                    } else if (mouseX > tradeCancelBtnX && mouseX < tradeCancelBtnX + tradeBtnW &&
+                        mouseY > tradeBtnY && mouseY < tradeBtnY + tradeBtnH) {
+                        // clicking on the cancel button
+                        socket.emit('tradeCancel');
+                    } else if (mouseX > tradeAcceptBtnX && mouseX < tradeAcceptBtnX + tradeBtnW &&
+                        mouseY > tradeBtnY && mouseY < tradeBtnY + tradeBtnH) {
+                        // clicking on the accept button
+                    }
+                    // clicking on the area of the trade window while the player is trading
+                } else {
+                    // clicking on the area of the trade window while the player is not trading so just walk
+                    movePlayer();
+                    console.log('3');
                 }
             } else {
-                // clicking on the inventory area with inventory closed
-                // just walk
-                movePlayer();
-                console.log('2');
-            }
-        } else if (mouseX > tradeX && mouseX < tradeX + tradeW &&
-            mouseY > tradeY && mouseY < tradeY + tradeH) {
-            // clicking somewhere in the trade window area
-            if (myHero.tradeStatus) {
-                if (mouseX > tradeX && mouseX < tradeX + tradeGridW &&
-                    mouseY > tradeY && mouseY < tradeY + tradeGridH) {
-                    // clicking on your grid inside tradewindow while trading
-                } else if (mouseX > tradeGoldBtnX && mouseX < tradeGoldBtnX + tradeBtnW &&
-                    mouseY > tradeBtnY && mouseY < tradeBtnY + tradeBtnH) {
-                    // clicking on the gold button to add some amount of gold to trade
-                } else if (mouseX > tradeCancelBtnX && mouseX < tradeCancelBtnX + tradeBtnW &&
-                    mouseY > tradeBtnY && mouseY < tradeBtnY + tradeBtnH) {
-                    // clicking on the cancel button
-                    socket.emit('tradeCancel');
-                } else if (mouseX > tradeAcceptBtnX && mouseX < tradeAcceptBtnX + tradeBtnW &&
-                    mouseY > tradeBtnY && mouseY < tradeBtnY + tradeBtnH) {
-                    // clicking on the accept button
+                // clicking outside of an inventory area
+                if (itemPickedStatus) {
+                    // clicking outside of an inventory area with item picked
+                    dropPickedItem();
+                } else {
+                    // clicking outside of an inventory area with no item picked
+                    // just walk
+                    movePlayer();
+                    console.log('4');
                 }
-                // clicking on the area of the trade window while the player is trading
-            } else {
-                // clicking on the area of the trade window while the player is not trading so just walk
-                movePlayer();
-                console.log('3');
-            }
-        } else {
-            // clicking outside of an inventory area
-            if (itemPickedStatus) {
-                // clicking outside of an inventory area with item picked
-                dropPickedItem();
-            } else {
-                // clicking outside of an inventory area with no item picked
-                // just walk
-                movePlayer();
-                console.log('4');
             }
         }
     } else if (mouseButton == RIGHT && mouseX > 0 && mouseX < width && mouseY > 0 && mouseY < height) {

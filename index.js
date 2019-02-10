@@ -228,6 +228,7 @@ class Player {
             items: [],
             with: '',
             radius: 500,
+            accept: false,
             window: [
                 [0, 0, 0, 0, 0, 0, 0, 0],
                 [0, 0, 0, 0, 0, 0, 0, 0],
