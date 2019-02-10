@@ -940,6 +940,32 @@ function mousePressed() {
                     if (mouseX > tradeX && mouseX < tradeX + tradeGridW &&
                         mouseY > tradeY && mouseY < tradeY + tradeGridH) {
                         // clicking on your grid inside tradewindow while trading
+                        if (itemPickedStatus) {
+                            // place an item in the trade grid
+                            let mouseCoords = {
+                                x: Math.floor((mouseX - tradeX) / cellSide),
+                                y: Math.floor((mouseY - tradeY) / cellSide)
+                            };
+                            socket.emit('placingItemTrade', mouseCoords);
+                            socket.on('replacingItemTradeResult', function (result) {
+                                if (result) {
+                                    pickedItem = {};
+                                    itemPickedStatus = false;
+                                }
+                            });
+                        } else {
+                            // pick the item up
+                            for (let i = 0; i < myHero.trade.items.length; i++) {
+                                if (mouseX > tradeX + myHero.trade.items[i].globalX * cellSide &&
+                                    mouseX < tradeX + (myHero.trade.items[i].globalX + myHero.trade.items[i].width) * cellSide &&
+                                    mouseY > tradeY + myHero.trade.items[i].globalY * cellSide &&
+                                    mouseY < tradeY + (myHero.trade.items[i].globalY + myHero.trade.items[i].height) * cellSide) {
+                                    pickedItem = myHero.trade.items[i];
+                                    itemPickedStatus = true;
+                                    socket.emit('tradePickItem', pickedItem);
+                                }
+                            }
+                        }
                     } else if (mouseX > tradeGoldBtnX && mouseX < tradeGoldBtnX + tradeBtnW &&
                         mouseY > tradeBtnY && mouseY < tradeBtnY + tradeBtnH) {
                         // clicking on the gold button to add some amount of gold to trade

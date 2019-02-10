@@ -621,6 +621,7 @@ function fakeItem() {
     let newPendant1 = {
         id: 521321,
         inBag: false,
+        inTrade: false,
         inWarehouse: false,
         width: 1,
         height: 1,
@@ -637,6 +638,7 @@ function fakeItem() {
     let newPendant2 = {
         id: 525361,
         inBag: false,
+        inTrade: false,
         inWarehouse: false,
         inShop: false,
         width: 1,
@@ -655,6 +657,7 @@ function fakeItem() {
     let newRing1 = {
         id: 998998,
         inBag: false,
+        inTrade: false,
         inWarehouse: false,
         inShop: false,
         width: 1,
@@ -672,6 +675,7 @@ function fakeItem() {
     let newRing2 = {
         id: 908918,
         inBag: false,
+        inTrade: false,
         inWarehouse: false,
         inShop: false,
         width: 1,
@@ -690,6 +694,7 @@ function fakeItem() {
     let newWing1 = {
         id: 492321,
         inBag: false,
+        inTrade: false,
         inWarehouse: false,
         inShop: false,
         width: 4,
@@ -707,6 +712,7 @@ function fakeItem() {
     let newWing2 = {
         id: 472121,
         inBag: false,
+        inTrade: false,
         inWarehouse: false,
         inShop: false,
         width: 4,
@@ -725,6 +731,7 @@ function fakeItem() {
     let newLeftWeapon1 = {
         id: 412320,
         inBag: false,
+        inTrade: false,
         inWarehouse: false,
         inShop: false,
         width: 2,
@@ -742,6 +749,7 @@ function fakeItem() {
     let newLeftWeapon2 = {
         id: 411121,
         inBag: false,
+        inTrade: false,
         inWarehouse: false,
         inShop: false,
         width: 2,
@@ -760,6 +768,7 @@ function fakeItem() {
     let newRightWeapon1 = {
         id: 472320,
         inBag: false,
+        inTrade: false,
         inWarehouse: false,
         inShop: false,
         width: 2,
@@ -777,6 +786,7 @@ function fakeItem() {
     let newRightWeapon2 = {
         id: 416121,
         inBag: false,
+        inTrade: false,
         inWarehouse: false,
         inShop: false,
         width: 2,
@@ -1071,7 +1081,7 @@ function changeRightRing(socketId) {
     MAP.players[i].rightRing = newRight;
     MAP.players[i].draggingItem = oldRight;
 }
-//
+// something
 function moveAllPlayers() {
     for (let i = 0; i < MAP.players.length; i++) {
         MAP.players[i].move();
@@ -1150,14 +1160,6 @@ function addToPlayerItemsReplaceWarehouse(playerIndex) {
     MAP.players[playerIndex].warehouseItems.push(MAP.players[playerIndex].draggingItem);
     MAP.players[playerIndex].draggingItem = null;
 }
-function emptyWarehouseItemSpace(playerIndex, draggingItem) {
-    // make zeros where the item was located
-    for (let i = draggingItem.globalY; i < draggingItem.globalY + draggingItem.height; i++) {
-        for (let j = draggingItem.globalX; j < draggingItem.globalX + draggingItem.width; j++) {
-            MAP.players[playerIndex].warehouse[i][j] = 0;
-        }
-    }
-}
 function assignPickedItemWarehouse(socketId, pickedItem) {
     let i = findPlayerIndex(socketId);
     for (let j = 0; j < MAP.players[i].warehouseItems.length; j++) {
@@ -1167,6 +1169,14 @@ function assignPickedItemWarehouse(socketId, pickedItem) {
             MAP.players[i].draggingItem.inWarehouse = false;
             // emptyInventoryItemSpace(i, MAP.players[i].draggingItem);
             emptyWarehouseItemSpace(i, MAP.players[i].draggingItem);
+        }
+    }
+}
+function emptyWarehouseItemSpace(playerIndex, draggingItem) {
+    // make zeros where the item was located
+    for (let i = draggingItem.globalY; i < draggingItem.globalY + draggingItem.height; i++) {
+        for (let j = draggingItem.globalX; j < draggingItem.globalX + draggingItem.width; j++) {
+            MAP.players[playerIndex].warehouse[i][j] = 0;
         }
     }
 }
@@ -1218,14 +1228,6 @@ function addToPlayerItemsReplace(playerIndex) {
     MAP.players[playerIndex].items.push(MAP.players[playerIndex].draggingItem);
     MAP.players[playerIndex].draggingItem = null;
 }
-function emptyInventoryItemSpace(playerIndex, draggingItem) {
-    // make zeros where the item was located
-    for (let i = draggingItem.globalY; i < draggingItem.globalY + draggingItem.height; i++) {
-        for (let j = draggingItem.globalX; j < draggingItem.globalX + draggingItem.width; j++) {
-            MAP.players[playerIndex].inventory[i][j] = 0;
-        }
-    }
-}
 function assignPickedItem(socketId, pickedItem) {
     let i = findPlayerIndex(socketId);
     for (let j = 0; j < MAP.players[i].items.length; j++) {
@@ -1234,6 +1236,14 @@ function assignPickedItem(socketId, pickedItem) {
             MAP.players[i].draggingItem.inBag = false;
             MAP.players[i].items.splice(j, 1);
             emptyInventoryItemSpace(i, MAP.players[i].draggingItem);
+        }
+    }
+}
+function emptyInventoryItemSpace(playerIndex, draggingItem) {
+    // make zeros where the item was located
+    for (let i = draggingItem.globalY; i < draggingItem.globalY + draggingItem.height; i++) {
+        for (let j = draggingItem.globalX; j < draggingItem.globalX + draggingItem.width; j++) {
+            MAP.players[playerIndex].inventory[i][j] = 0;
         }
     }
 }
@@ -1487,13 +1497,85 @@ io.sockets.on('connection', function (socket) {
     socket.on('tradeAddGold', function (goldAmount) {
         tradeAddGold(socket.id, goldAmount);
     });
+    socket.on('tradePickItem', function (pickedItem) {
+        assignPickedItemTrade(socket.id, pickedItem);
+    });
+    socket.on('placingItemTrade', function (mouseCoords) {
+        let result = placingItemTrade(socket.id, mouseCoords);
+        socket.emit('replacingItemTradeResult', result);
+    });
 });
 
+// trade
+function placingItemTrade(socketId, mouseCoords) {
+    let i = findPlayerIndex(socketId);
+    let status = false;
+    if (checkItemCellsReplaceTrade(i, mouseCoords.y, mouseCoords.x)) {
+        // checking if any free space exists and fitting the object
+        status = true;
+    }
+    return status;
+}
+function checkItemCellsReplaceTrade(playerIndex, i, j) {
+    let counter = MAP.players[playerIndex].draggingItem.width * MAP.players[playerIndex].draggingItem.height;
+    if (i + MAP.players[playerIndex].draggingItem.height <= 8 && // trade width in cells
+        j + MAP.players[playerIndex].draggingItem.width <= 6) { // trade height in cells
+        for (let ii = 0; ii < MAP.players[playerIndex].draggingItem.height; ii++) {
+            for (let jj = 0; jj < MAP.players[playerIndex].draggingItem.width; jj++) {
+                if (MAP.players[playerIndex].trade.window[i + ii][j + jj] == 0) {
+                    counter--;
+                    if (counter == 0) {
+                        fitItemReplaceTrade(playerIndex, i, ii, j, jj);
+                        addToPlayerItemsReplaceTrade(playerIndex);
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+    return false;
+}
+function fitItemReplaceTrade(playerIndex, i, ii, j, jj) {
+    // ii - height of an item
+    // jj - width of an item
+    MAP.players[playerIndex].draggingItem.inTrade = true;
+    MAP.players[playerIndex].draggingItem.inBag = false;
+    MAP.players[playerIndex].draggingItem.globalX = j;
+    MAP.players[playerIndex].draggingItem.globalY = i;
+    for (let iii = 0; iii <= ii; iii++) {
+        for (let jjj = 0; jjj <= jj; jjj++) {
+            MAP.players[playerIndex].trade.window[i + iii][j + jjj] = 1;
+        }
+    }
+}
+function addToPlayerItemsReplaceTrade(playerIndex) {
+    MAP.players[playerIndex].trade.items.push(MAP.players[playerIndex].draggingItem);
+    MAP.players[playerIndex].draggingItem = null;
+}
+function assignPickedItemTrade(socketId, pickedItem) {
+    let i = findPlayerIndex(socketId);
+    for (let j = 0; j < MAP.players[i].trade.items.length; j++) {
+        if (MAP.players[i].trade.items[j].id == pickedItem.id) {
+            MAP.players[i].draggingItem = MAP.players[i].trade.items[j];
+            MAP.players[i].trade.items.splice(j, 1);
+            MAP.players[i].draggingItem.inTrade = false;
+            // emptyInventoryItemSpace(i, MAP.players[i].draggingItem);
+            emptyTradeItemSpace(i, MAP.players[i].draggingItem);
+        }
+    }
+}
+function emptyTradeItemSpace(playerIndex, draggingItem) {
+    // make zeros where the item was located
+    for (let i = draggingItem.globalY; i < draggingItem.globalY + draggingItem.height; i++) {
+        for (let j = draggingItem.globalX; j < draggingItem.globalX + draggingItem.width; j++) {
+            MAP.players[playerIndex].trade.window[i][j] = 0;
+        }
+    }
+}
 function tradeAddGold(socketId, goldAmount) {
     let i = findPlayerIndex(socketId);
     MAP.players[i].trade.gold = goldAmount;
 }
-
 function cancelTrade(socketId) {
     let i = findPlayerIndex(socketId);
     MAP.players[i].tradeStatus = false;
