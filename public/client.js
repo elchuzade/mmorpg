@@ -6,7 +6,6 @@ let calculator = false;
 let calcOutput = 0;
 let calcItem = '';
 
-
 let width = 1200;
 let height = 660;
 let state = {};
@@ -157,7 +156,7 @@ function drawCalc() {
     rect(calcX, calcY, calcW, cellSide);
     rect(calcX + cellSide, calcY + cellSide * 4, cellSide * 2, cellSide);
     fill(10, 10, 10);
-    addText();
+    addCalcNumText();
     pop();
 }
 function addCalcDigit(digit) {
@@ -174,7 +173,7 @@ function removeCalcDigit() {
 function cancelCalcValue() {
     calculator = false;
 }
-function addText() {
+function addCalcNumText() {
     textSize(20);
     // first row
     text('1', calcX + 10, calcY + cellSide + 23);
@@ -208,7 +207,17 @@ function allInCalc() {
         }
     }
 }
-
+function sendCalcValue() {
+    console.log('rqrqrqrqr');
+    if (myHero.tradeStatus) {
+        // trading some items
+        if (calcItem == 'gold') {
+            // trading gold with the calculator
+            socket.emit('tradeAddGold', calcOutput);
+            calculator = false;
+        }
+    }
+}
 
 let tradeGridW = cellSide * 8;
 let tradeGridH = cellSide * 6;
@@ -244,6 +253,19 @@ function drawTrade() { // fix all the colors later
     rect(tradeGoldBtnX, tradeBtnY, tradeBtnW, tradeBtnH);
     rect(tradeCancelBtnX, tradeBtnY, tradeBtnW, tradeBtnH);
     rect(tradeAcceptBtnX, tradeBtnY, tradeBtnW, tradeBtnH);
+    tradeGoldBarText();
+    pop();
+}
+function tradeGoldBarText() {
+    push();
+    textSize(20);
+    stroke(10, 10, 10);
+    fill(10, 10, 10);
+    text(myHero.trade.gold, tradeGoldBarLeftX + 10, tradeGoldBarY + 22);
+    text(myHero.tradeFor.gold, tradeGoldBarRightX + 10, tradeGoldBarY + 22);
+    text('gold', tradeGoldBtnX + 10, tradeBtnY + 22);
+    text('X', tradeCancelBtnX + 10, tradeBtnY + 22);
+    text('V', tradeAcceptBtnX + 10, tradeBtnY + 22);
     pop();
 }
 function getRandomInt(max) {

@@ -224,10 +224,24 @@ class Player {
         this.warehouseOpened = false;
         this.jewelryShopOpened = false;
         this.tradeStatus = true;
+        this.tradeFor = {
+            items: [],
+            gold: 0,
+            accept: false,
+            window: [
+                [0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0]
+            ]
+        }
         this.trade = {
             items: [],
             with: '',
             radius: 500,
+            gold: 0,
             accept: false,
             window: [
                 [0, 0, 0, 0, 0, 0, 0, 0],
@@ -1469,7 +1483,16 @@ io.sockets.on('connection', function (socket) {
     socket.on('tradeCancel', function () {
         cancelTrade(socket.id);
     });
+    // trade add gold
+    socket.on('tradeAddGold', function (goldAmount) {
+        tradeAddGold(socket.id, goldAmount);
+    });
 });
+
+function tradeAddGold(socketId, goldAmount) {
+    let i = findPlayerIndex(socketId);
+    MAP.players[i].trade.gold = goldAmount;
+}
 
 function cancelTrade(socketId) {
     let i = findPlayerIndex(socketId);
