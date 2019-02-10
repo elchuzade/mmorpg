@@ -2,8 +2,10 @@ document.oncontextmenu = function () { return false; }
 var socket = io.connect('http://localhost:4000');
 
 let foundMyHero = false;
-let calculator = true;
+let calculator = false;
 let calcOutput = 0;
+let calcItem = '';
+
 
 let width = 1200;
 let height = 660;
@@ -196,6 +198,17 @@ function addText() {
     // value
     text(calcOutput, calcX + 10, calcY + 23);
 }
+function allInCalc() {
+    if (calcItem == 'gold') {
+        console.log('cac');
+        if (myHero.gold > 999999999) {
+            calcOutput = 999999999;
+        } else {
+            calcOutput = myHero.gold;
+        }
+    }
+}
+
 
 let tradeGridW = cellSide * 8;
 let tradeGridH = cellSide * 6;
@@ -908,6 +921,8 @@ function mousePressed() {
                     } else if (mouseX > tradeGoldBtnX && mouseX < tradeGoldBtnX + tradeBtnW &&
                         mouseY > tradeBtnY && mouseY < tradeBtnY + tradeBtnH) {
                         // clicking on the gold button to add some amount of gold to trade
+                        calculator = true;
+                        calcItem = 'gold';
                     } else if (mouseX > tradeCancelBtnX && mouseX < tradeCancelBtnX + tradeBtnW &&
                         mouseY > tradeBtnY && mouseY < tradeBtnY + tradeBtnH) {
                         // clicking on the cancel button
